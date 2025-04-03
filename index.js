@@ -1,5 +1,18 @@
 require("dotenv").config();
+const express = require("express");
 const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  console.log(`📡 收到 ping - ${new Date().toLocaleTimeString()}`);
+  res.send("Bot is running!");
+});
+
+app.listen(port, () => {
+  console.log("🌐 Web server is up!");
+});
 
 const client = new Client({
   intents: [
@@ -14,20 +27,7 @@ const client = new Client({
 
 client.once(Events.ClientReady, () => {
   console.log(`✅ 已登入為 ${client.user.tag}`);
-});
-
-client.login(process.env.TOKEN);
-
-const express = require("express");
-const app = express();
-
-app.get("/", (req, res) => {
-  console.log(`📡 收到 ping - ${new Date().toLocaleTimeString()}`);
-  res.send("Bot is running!");
-});
-
-app.listen(3000, () => {
-  console.log("🌐 Web server is up!");
+  console.log(`🛌 醒來於 ${new Date().toLocaleTimeString()}`);
 });
 
 //功能：點擊emojis，增加身分組並移除指定身分組
@@ -72,4 +72,4 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
   }
 });
 
-
+client.login(process.env.TOKEN);
