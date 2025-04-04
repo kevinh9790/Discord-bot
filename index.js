@@ -5,7 +5,7 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 
 // === 建立 Express 保活伺服器 ===
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 app.get("/", (req, res) => {
   console.log(`📡 收到 ping - ${new Date().toLocaleTimeString()}`);
