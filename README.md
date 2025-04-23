@@ -2,8 +2,7 @@
 Discord-bot/
 ├── index.js                 # 主程式入口，初始化 bot
 ├── commands/                # 存放所有指令模組
-│   ├── ping.js              # 範例指令：ping
-│   └── ...                  # 其他指令
+│   └── ping.js              # 範例指令：ping
 ├── events/                  # 存放事件處理器
 │   ├── ready.js             # Bot 啟動完成事件
 │   └── messageCreate.js     # 處理收到訊息事件
@@ -13,6 +12,8 @@ Discord-bot/
 │   └── fetchEvents.js       # 抓取 Discord 活動資訊
 ├── config/                  # 配置檔案
 │   └── config.js            # 儲存常數與設定
+├── assets/                  # 靜態資源如圖片
+│   └── generated-icon.png   # 專案中用到的圖像資源
 ├── .env                     # 環境變數，儲存敏感資訊
 ├── .gitignore               # Git 忽略設定
 ├── package.json             # 專案設定與依賴

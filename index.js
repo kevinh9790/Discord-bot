@@ -1,9 +1,12 @@
+// ✅ index.js
 require("dotenv").config();
 const express = require("express");
-const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)); // 自我 ping 用
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
+const fs = require("node:fs");
+const path = require("node:path");
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-// === 建立 Express 保活伺服器 ===
+// 🌐 Express 保活伺服器
 const app = express();
 const port = process.env.PORT || 8080;
 
@@ -16,7 +19,7 @@ app.listen(port, () => {
   console.log("🌐 Web server is up!");
 });
 
-// === 建立 Discord Bot 客戶端 ===
+// 🤖 Discord Bot 客戶端
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -24,68 +27,32 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildScheduledEvents,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-// === Bot 啟動後事件 ===
-client.once(Events.ClientReady, () => {
-  console.log(`✅ 已登入為 ${client.user.tag}`);
-  console.log(`🛌 醒來於 ${new Date().toLocaleTimeString()}`);
-});
+// 📂 載入事件模組
+const eventsPath = path.join(__dirname, "events");
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
 
-// === 表情符號 → 身分組切換功能（範例） ===
-const targetMessageId = "1257649090821488703"; // 指定的訊息ID
-const targetEmoji = "✅"; // 或填入你的 emoji 名稱
-const addRoleId = "1231119841319063613"; //冒險者
-const removeRoleId = "1356902843294023680"; //冒險新人
-
-client.on(Events.MessageReactionAdd, async (reaction, user) => {
-  
-  // 避免 bot 自己觸發
-  if (user.bot) return;
-  
-  try {
-    // 確保 reaction 有載入完整資料（避免 partial 錯誤）
-    if (reaction.partial) await reaction.fetch();
-    if (reaction.message.partial) await reaction.message.fetch();
-
-    console.log(
-      `🧪 偵測到 ${user.username} 對訊息${reaction.message.id} 加了 ${reaction.emoji.name}`,
-    );
-
-    // ✅ 檢查是否是目標訊息 + emoji
-    if (
-      reaction.message.id === targetMessageId &&
-      reaction.emoji.name === targetEmoji
-    ) {
-      const member = await reaction.message.guild.members.fetch(user.id);
-
-      // 加角色
-      await member.roles.add(addRoleId);
-      console.log(`✅ 已為 ${user.username} 加上角色 ID：${addRoleId}`);
-
-      // 移除角色
-      await member.roles.remove(removeRoleId);
-      console.log(`❌ 已為 ${user.username} 移除角色 ID：${removeRoleId}`);
-    } else {
-      console.log("⚠️ Emoji 或 訊息ID 不符合條件，忽略此次反應");
-    }
-  } catch (err) {
-    console.error("🚨 執行錯誤：", err);
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file);
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args, client));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args, client));
   }
-});
+}
 
-// === 登入 Discord Bot ===
+// 🚪 登入 Discord
 client.login(process.env.TOKEN);
 
-// === 🌀 自我 Ping 每 4 分鐘一次 ===
-const PING_URL = "https://discord-bot-production-8a80.up.railway.app/"; // 🔁 替換成你的 Railway 網址
-
+// 🔁 自我 ping
+const PING_URL = "https://discord-bot-production-8a80.up.railway.app/";
 setInterval(() => {
   fetch(PING_URL)
     .then(() => console.log(`🌀 自我 ping 成功 (${new Date().toLocaleTimeString()})`))
     .catch(() => console.warn("⚠️ 自我 ping 失敗"));
-}, 1000 * 60 * 4); // 每 4 分鐘 ping 一次
+}, 1000 * 60 * 4);
