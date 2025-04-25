@@ -46,7 +46,7 @@ for (const file of eventFiles) {
   }
 }
 
-// 🚪 登入 Discord
+// 🚪 登入 Discord 
 client.login(process.env.TOKEN);
 
 // 🔁 自我 ping
