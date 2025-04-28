@@ -66,3 +66,5 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 
 // === 登入 Discord Bot ===
 client.login(process.env.TOKEN);
+
+//測試可不可以吃喜餅
