@@ -80,12 +80,3 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 
 // === 登入 Discord Bot ===
 client.login(process.env.TOKEN);
-
-// === 🌀 自我 Ping 每 4 分鐘一次 ===
-const PING_URL = "https://discord-bot-production-8a80.up.railway.app/"; // 🔁 替換成你的 Railway 網址
-
-setInterval(() => {
-  fetch(PING_URL)
-    .then(() => console.log(`🌀 自我 ping 成功 (${new Date().toLocaleTimeString()})`))
-    .catch(() => console.warn("⚠️ 自我 ping 失敗"));
-}, 1000 * 60 * 4); // 每 4 分鐘 ping 一次
