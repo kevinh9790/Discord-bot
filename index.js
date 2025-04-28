@@ -1,20 +1,6 @@
 require("dotenv").config();
-const express = require("express");
 const { Client, Events, GatewayIntentBits, Partials } = require("discord.js");
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)); // 自我 ping 用
-
-// === 建立 Express 保活伺服器 ===
-const app = express();
-const port = process.env.PORT || 8080;
-
-app.get("/", (req, res) => {
-  console.log(`📡 收到 ping - ${new Date().toLocaleTimeString()}`);
-  res.send("Bot is running!");
-});
-
-app.listen(port, () => {
-  console.log("🌐 Web server is up!");
-});
 
 // === 建立 Discord Bot 客戶端 ===
 const client = new Client({
