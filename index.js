@@ -57,3 +57,7 @@ setInterval(() => {
     .then(() => console.log(`🌀 dev自我 ping 成功 (${new Date().toLocaleTimeString()})`))
     .catch(() => console.warn("⚠️ 自我 ping 失敗"));
 }, 1000 * 60 * 4);
+
+client.once("ready", () => {
+  console.log(`✅ Bot 已啟動：${client.user.tag}，啟動時間：${new Date().toLocaleTimeString()}`);
+});
