@@ -9,7 +9,7 @@ module.exports = {
 
     // ✅ 只有管理員可以使用文字指令
     if (!message.member.permissions.has("Administrator")) {
-      return message.reply("🚫 此類指令目前僅限管理員使用！");
+      return;
     }
 
     const args = message.content.slice(1).trim().split(/ +/);
