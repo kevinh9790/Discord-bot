@@ -6,7 +6,7 @@ module.exports = {
       message.reply({
         content:[
             `📣 加入我們的社群平台：`,
-`- Thread：<https://www.threads.net/@nightcastle888>`,
+`- Threads：<https://www.threads.net/@nightcastle888>`,
 `- Instagram：<https://www.instagram.com/nightcastle888>`,
 `- Youtube：<https://www.youtube.com/@nightcastle888>`,
 `- Twitch：<https://www.twitch.tv/nightcastle888>`,
