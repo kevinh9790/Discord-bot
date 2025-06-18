@@ -10,7 +10,7 @@ module.exports = {
 `- Instagram：<https://www.instagram.com/nightcastle888>`,
 `- Youtube：<https://www.youtube.com/@nightcastle888>`,
 `- Twitch：<https://www.twitch.tv/nightcastle888>`,
-`- Websites：<https://gamenightcastle.com/>`
+`- Website：<https://gamenightcastle.com/>`
         ].join('\n'),
         allowedMentions: { parse: [] },
         embeds:[]//禁用嵌入卡片
