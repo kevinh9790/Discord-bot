@@ -1,4 +1,4 @@
-// ✅ index.js
+﻿// ✅ index.js
 require("dotenv").config();
 
 const express = require("express");
@@ -55,7 +55,7 @@ const PING_URL = "https://discord-bot-production-8a80.up.railway.app/";
 setInterval(() => {
   fetch(PING_URL)
     .then(() => console.log(`🌀 dev自我 ping 成功 (${new Date().toLocaleTimeString()})`))
-    .catch(() => console.warn("⚠️ 自我 ping 失敗"));
+    .catch(() => console.warn("⚠️ 自我 ping 失敗><"));
 }, 1000 * 60 * 4);
 
 client.once("ready", () => {
