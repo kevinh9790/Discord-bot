@@ -11,7 +11,7 @@ module.exports = {
 `- Facebook：<https://www.facebook.com/share/1FjCEPDzQJ/>`,
 `- Threads：<https://www.threads.net/@nightcastle888>`,
 `- Twitch：<https://www.twitch.tv/nightcastle888>`,
-`- Website：<https://gamenightcastle.com/>`
+`- W ebsite：<https://gamenightcastle.com/>`
         ].join('\n'),
         allowedMentions: { parse: [] },
         embeds:[]//禁用嵌入卡片
