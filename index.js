@@ -33,6 +33,9 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
+// 🔹 初始化邀請快取（全域變數）
+client.inviteUses = new Map();
+
 // 📂 載入事件模組
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
