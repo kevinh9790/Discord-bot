@@ -1,7 +1,7 @@
 ﻿// utils/logger.js
 module.exports = async (client, msg) => {
     console.log(msg); // terminal
-    const logChannelId = 1232356996779343944; // .env 設定
+    const logChannelId = "1232356996779343944"; // .env 設定
     if (!logChannelId) return;
 
     try {
