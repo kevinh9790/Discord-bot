@@ -30,7 +30,7 @@
 
             // === 根據邀請給予身分組 ===
             const inviteRoleMap = {
-                "E6NtJhcU": "1233787911976259687"
+                "zvXFq24S": "1233787911976259687"
             };
 
             const roleId = inviteRoleMap[usedInvite.code];
