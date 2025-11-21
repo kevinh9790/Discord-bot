@@ -12,8 +12,10 @@ module.exports = {
 
     // ✅ 只有管理員可以使用文字指令
     if (!message.member.permissions.has("Administrator")) {
-      return;
+      return message.reply("❌ 【除錯模式】操作失敗：偵測到您沒有「管理員 (Administrator)」權限。");;
     }
+
+    
 
     //#region === 🛡️ 排除過濾 ===
         // 1. 排除特定分類
@@ -52,6 +54,10 @@ module.exports = {
         }
         break;
       }
+    }
+
+    if (!commandFound) {
+      message.reply(`⚠️ 【除錯模式】找不到指令：**${commandName}**\n請確認：\n1. 檔案是否已上傳到 commands 資料夾？\n2. 檔案內的 command.name 是否設定正確？\n3. 朋友是否真的重啟機器人了？`);
     }
   },
 };
