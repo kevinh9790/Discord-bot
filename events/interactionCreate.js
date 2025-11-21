@@ -120,11 +120,10 @@ module.exports = {
             if (interaction.customId === 'submit_suggestion') {
                 const title = interaction.fields.getTextInputValue('suggestion_title');
                 const content = interaction.fields.getTextInputValue('suggestion_content');
-                const targetChannel = interaction.guild.channels.cache.get(SUGGESTION_CHANNEL_ID);
 
                 try {
                     // 1. 使用 fetch 確保能抓到討論串 (即使它沉下去了)
-                    const targetThread = await interaction.guild.channels.fetch(targetThreadId);
+                    const targetThread = await interaction.guild.channels.fetch(SUGGESTION_CHANNEL_ID);
 
                     if (!targetThread) {
                         return interaction.reply({ content: "❌ 設定錯誤：找不到指定的討論串，請確認 ID 是否正確。", ephemeral: true });
@@ -143,12 +142,12 @@ module.exports = {
 
                     // 4. 建立漂亮的 Embed
                     const embed = new EmbedBuilder()
-                        .setTitle(`💡 新的建議：${title}`)
+                        .setTitle(`${title}`)
                         .setDescription(content)
                         .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
                         .setColor(0xFFA500) // 橘色
-                        .setTimestamp()
-                        .setFooter({ text: `用戶 ID: ${interaction.user.id}` });
+                        .addFields({ name: '\n👤 建議者', value: interaction.user.toString(), inline: true })
+                        .setTimestamp();
 
                     // 5. 直接發送進該討論串
                     await targetThread.send({ embeds: [embed] });
