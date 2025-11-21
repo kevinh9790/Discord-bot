@@ -1,4 +1,6 @@
-﻿const cron = require('node-cron');
+﻿const fs = require('fs');
+const path = require('path');
+const cron = require('node-cron');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 // 輔助函數：將毫秒轉為時:分:秒

@@ -43,27 +43,38 @@ module.exports = {
         });
 
         // --- B. 整理數據 ---
-        const allStats = Object.values(previewChannels);
+        const allStats = Object.entries(previewChannels).map(([id, data]) => ({
+            id: id, // 👈 把 ID 存下來，這樣等一下才能變成 <#ID>
+            ...data // 把原本的 name, msgCount, voiceMs 展開進來
+        }));
 
-        // 1. 訊息排名
-        const msgRank = [...allStats].sort((a, b) => b.msgCount - a.msgCount).slice(0, 10);
-        // 2. 語音排名
-        const voiceRank = [...allStats].sort((a, b) => b.voiceMs - a.voiceMs).slice(0, 10);
+        // 1. 訊息排名：只取訊息數 > 0 的
+        const msgRank = allStats
+            .filter(data => data.msgCount > 0) 
+            .sort((a, b) => b.msgCount - a.msgCount)
+            .slice(0, 10);
+        // 2. 語音排名：只取語音時長 > 0 的
+        const voiceRank = allStats
+            .filter(data => data.voiceMs > 0)
+            .sort((a, b) => b.voiceMs - a.voiceMs)
+            .slice(0, 10);
 
         // --- C. 製作表格 ---
         let tableString = "頻道名稱             | 💬 訊息數 | 🎙️ 語音時長\n";
         tableString += "---------------------|----------|------------\n";
         
         // 綜合排序：訊息多或語音長的排前面
-        allStats.sort((a,b) => (b.msgCount + b.voiceMs) - (a.msgCount + a.voiceMs)).forEach(stat => {
-            if (stat.msgCount === 0 && stat.voiceMs === 0) return;
-            
-            let name = stat.name.length > 12 ? stat.name.substring(0, 10) + ".." : stat.name;
-            let msg = stat.msgCount.toString().padStart(6);
-            let time = formatDuration(stat.voiceMs);
-            
-            tableString += `${name.padEnd(20)} | ${msg}   | ${time}\n`;
-        });
+        // 表格排序：總活躍度 (訊息+語音)
+        allStats
+            .filter(data => data.msgCount > 0 || data.voiceMs > 0) // 過濾掉完全沒動靜的
+            .sort((a,b) => (b.msgCount + b.voiceMs) - (a.msgCount + a.voiceMs))
+            .forEach(stat => {
+                let name = stat.name.length > 12 ? stat.name.substring(0, 10) + ".." : stat.name;
+                let msg = stat.msgCount.toString().padStart(6);
+                let time = formatDuration(stat.voiceMs);
+                
+                tableString += `${name.padEnd(20)} | ${msg}   | ${time}\n`;
+            });
 
         if (tableString.length > 1000) tableString = tableString.substring(0, 950) + "\n... (下略)";
 
@@ -73,9 +84,9 @@ module.exports = {
             .setDescription("這是手動觸發的預覽報表，**不會**清除目前的累積數據。")
             .setColor(0x00FF00) // 綠色代表測試
             .addFields(
-                { name: '🏆 訊息活躍排行', value: msgRank.map((c, i) => `${i+1}. **${c.name}**: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
-                { name: '🗣️ 語音話癆排行', value: voiceRank.map((c, i) => `${i+1}. **${c.name}**: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
-                { name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
+                { name: '🏆 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
+                { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. <#${c.id}>: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
+                //{ name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
             )
             .setTimestamp();
 
