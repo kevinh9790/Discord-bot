@@ -1,5 +1,5 @@
 const { Events, ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-
+// 用於工單功能的設置
 module.exports = {
     name: Events.InteractionCreate, // 對應 'interactionCreate'
     async execute(interaction, client) {

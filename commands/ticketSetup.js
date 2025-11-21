@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-
+// 用於創建工單按鈕
 module.exports = {
     name: "住客登記", // 觸發指令：&客服單
     description: "發送 Ticket 客服面板",
