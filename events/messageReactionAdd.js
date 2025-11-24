@@ -1,11 +1,10 @@
-const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455"];
+﻿const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455"];
 
 // 🛠️ 設定除錯頻道 ID
 const DEBUG_CHANNEL_ID = "1232356996779343944"; 
 
 // 輔助函數：發送 Log 到 Discord
 async function sendLog(client, message, type = 'info') {
-    if (type === 'error') console.error(message);
     else console.log(message);
 
     if (!DEBUG_CHANNEL_ID) return;
@@ -33,14 +32,14 @@ module.exports = {
       if (reaction.message.partial) await reaction.message.fetch();
     } catch (error) {
       const errorMsg = `❌ 無法讀取反應或訊息: ${error.message}`;
-      await sendLog(client, errorMsg, 'error');
+      sendLog(client, errorMsg, 'error');
       return;
     }
 
     const message = reaction.message;
 
     // 🟢 1. [開啟] 讓機器人告訴你它有感覺到了
-    await sendLog(client, `🔍 偵測到 ${user.username} 在 <#${message.channel.id}> 對訊息按了 ${reaction.emoji.name}`);
+    sendLog(client, `🔍 偵測到 ${user.username} 在 <#${message.channel.id}> 對訊息按了 ${reaction.emoji.name}`);
 
     //#region 📊 統計反應王
     const isIgnoredCategory = message.channel.parentId && IGNORED_CATEGORIES.includes(message.channel.parentId);
