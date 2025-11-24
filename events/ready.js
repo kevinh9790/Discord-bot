@@ -51,18 +51,10 @@ module.exports = {
                     guildId,
                     new Map(invites.map(inv => [inv.code, inv.uses]))
                 );
-                console.log(`📋 已抓取 ${guild.name} 的邀請快取，共 ${invites.size} 筆`);
+                //console.log(`📋 已抓取 ${guild.name} 的邀請快取，共 ${invites.size} 筆`);
             } catch (err) {
                 console.warn(`⚠️ 無法抓取 ${guild.name} 的邀請快取: ${err.message}`);
             }
-        }
-
-        // 🔹 檢查 inviteRoles.json 是否存在
-        const filePath = path.join(__dirname, "../inviteRoles.json");
-        if (!fs.existsSync(filePath)) {
-            console.warn("⚠️ inviteRoles.json 不存在，請建立此檔案來設定邀請碼對應角色");
-        } else {
-            console.log("📂 inviteRoles.json 已存在，可支援動態邀請碼對應角色");
         }
 
         console.log(`🤖 已啟動並記錄所有伺服器邀請次數`);
@@ -77,12 +69,20 @@ module.exports = {
 
         //#region 2. 設定排程：每天午夜 00:00 執行，用以統計訊息總數、語音時長、表情符號總數，並整理輸出表格
         cron.schedule('0 0 0 * * *', async () => {
-            console.log('📊 開始結算每日數據...');
-            const guild = client.guilds.cache.first(); 
-            const logChannelId = "1229095307124408385"; 
-            const logChannel = guild?.channels.cache.get(logChannelId);
+           try {
+            await sendLog(client, '📊 開始自動結算每日數據...');
 
-            if (!guild || !logChannel) return console.log("找不到伺服器或日誌頻道");
+            // 1. 抓取日報要發送的頻道
+            const logChannelId = "1229095307124408385"; 
+            const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
+
+            // 2. 確保數據存在
+            if (!client.dailyStats) {
+                await sendLog(client, '❌ client.dailyStats 遺失，無法產生報表', 'error');
+                // 重新初始化以防萬一
+                client.dailyStats = { channels: {}, mostReacted: { count: 0 }, voiceSessions: new Map() };
+                return;
+            }
             
             await logChannel.send('📊 開始結算每日數據...');
 
@@ -175,21 +175,19 @@ module.exports = {
                 });
             }
 
-            try {
-                await logChannel.send({ embeds: [embed] });
-                // 🟢 [修改點] 發送成功 Log
-                await sendLog(client, '✅ 日報發送成功！');
-            } catch (err) {
-                // 🔴 [修改點] 發送失敗 Log
-                await sendLog(client, `❌ 日報發送失敗: ${err.message}`, 'error');
-            }
+            await logChannel.send({ embeds: [embed] });
+            await sendLog(client, '✅ 自動日報發送成功！');
             //#endregion
 
             //#region --- F. 重置數據 (除了正在語音中的 session 以外都要清空) ---
             client.dailyStats.channels = {};
             client.dailyStats.mostReacted = { count: 0, url: null, content: "", author: "" };
-            console.log('🔄 日報發送完畢，數據已重置');
+            await sendLog(client, '🔄 數據已重置');
             //#endregion
+           } catch (fatalError) {
+               // 這是最後一道防線，如果日報程式碼炸了，這裡會接住並通知你
+               await sendLog(client, `❌ [嚴重錯誤] 自動日報執行失敗: ${fatalError.message}`, 'error');
+           }
 
         }, { scheduled: true, timezone: "Asia/Taipei" });
         //#endregion
