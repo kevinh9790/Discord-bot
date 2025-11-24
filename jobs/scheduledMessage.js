@@ -1,4 +1,4 @@
-const cron = require('node-cron');
+﻿const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -73,7 +73,7 @@ const tasks = [
         name: "每週五提醒",
         enabled: false,
         cronTime: "0 17 * * 5", // 每週五下午 5:00 (17:00)
-        channelGroup: "monthly_reminders", // 🟢 設定群組名稱
+        channelGroup: "Friday_reminders", // 🟢 設定群組名稱
         content: {
             title: "📝 每週五提醒",
             description: "這是每週五提醒",
