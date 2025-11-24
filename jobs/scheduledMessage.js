@@ -5,6 +5,29 @@ const path = require('path');
 
 const channelsFilePath = path.join(__dirname, '../config/scheduledChannels.json');
 
+// 🛠️ 設定除錯頻道 ID (請替換為您的測試頻道 ID)
+// 如果留空或無效，則只會印在終端機
+const DEBUG_CHANNEL_ID = "1232356996779343944"; 
+
+// 輔助函數：發送 Log 到 Discord
+async function sendLog(client, message, type = 'info') {
+    console.log(message); // 保持終端機也有 Log
+
+    if (!DEBUG_CHANNEL_ID) return;
+
+    try {
+        const channel = await client.channels.fetch(DEBUG_CHANNEL_ID).catch(() => null);
+        if (channel && channel.isTextBased()) {
+            const prefix = type === 'error' ? '❌ [錯誤]' : '📝 [Log]';
+            // 避免訊息過長
+            const safeMessage = message.length > 1900 ? message.substring(0, 1900) + '...' : message;
+            await channel.send(`${prefix} ${safeMessage}`);
+        }
+    } catch (err) {
+        console.error('無法發送 Log 到 Discord:', err);
+    }
+}
+
 // 輔助函數：讀取指定群組的頻道列表
 function getScheduledChannels(groupName) {
     if (!fs.existsSync(channelsFilePath)) {
@@ -18,6 +41,7 @@ function getScheduledChannels(groupName) {
         if (Array.isArray(data)) return [];
         return data[groupName] || [];
     } catch (err) {
+        // 這裡無法使用 sendLog，因為還沒有 client 物件，只能印在終端機
         console.error('❌ 讀取排程頻道設定檔失敗:', err);
         return [];
     }
@@ -25,14 +49,10 @@ function getScheduledChannels(groupName) {
 
 /*時間格式說明：秒 分 時 日 月 星期 (node-cron寫法會自動在最前面補0)
 常用範例：
-
 0 0 12 * * *：每天中午 12:00:00
-
 0 30 9 * * 1：每週一早上 09:30:00
-
 0 0 0 1 * *：每月 1 號的午夜 00:00:00
-
-0 *除5 * * * *：每 5 分鐘一次 (測試用)
+0 *\/5 * * * *：每 5 分鐘一次 (測試用)
 */
 // 這裡定義你要排程的任務清單
 const tasks = [
@@ -61,7 +81,7 @@ const tasks = [
     // 範例任務 3：五分鐘測試
     {
         name: "五分鐘測試用",
-        cronTime: "0 */5 * * *",
+        cronTime: "0 */5 * * * *", // ⚠️ 注意：每5分鐘的寫法是 0 */5 * * * * (6位) 或 */5 * * * * (5位)
         channelGroup: "forTestFiveMins", // 🟢 設定群組名稱
         content: {
             title: "📝 每五分鐘的提醒測試",
@@ -75,22 +95,22 @@ const tasks = [
 module.exports = {
     name: 'scheduledMessage',
     execute(client) {
-        console.log('⏰ 載入定時發送任務...');
+        sendLog(client, '⏰ 載入定時發送任務...');
 
         tasks.forEach(task => {
             if (!cron.validate(task.cronTime)) {
-                console.error(`❌ 任務 [${task.name}] 的時間設定錯誤: ${task.cronTime}`);
+                sendLog(client, `❌ 任務 [${task.name}] 的時間設定錯誤: ${task.cronTime}`, 'error');
                 return;
             }
 
             cron.schedule(task.cronTime, async () => {
-                console.log(`🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
+                sendLog(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
                 
                 // 🟢 依據該任務設定的群組，讀取對應的頻道列表
                 const currentChannels = getScheduledChannels(task.channelGroup);
 
                 if (currentChannels.length === 0) {
-                    console.log(`⚠️ 任務 [${task.name}] (${task.channelGroup}) 沒有設定任何發送頻道，跳過執行。`);
+                    sendLog(client, `⚠️ 任務 [${task.name}] (${task.channelGroup}) 沒有設定任何發送頻道，跳過執行。`, 'info');
                     return;
                 }
 
@@ -99,7 +119,7 @@ module.exports = {
                         const channel = await client.channels.fetch(channelId).catch(() => null);
 
                         if (!channel || !channel.isTextBased()) {
-                            console.warn(`⚠️ 任務 [${task.name}] 跳過無效頻道 ID: ${channelId}`);
+                            sendLog(client, `⚠️ 任務 [${task.name}] 跳過無效頻道 ID: ${channelId}`, 'info');
                             continue;
                         }
 
@@ -110,10 +130,10 @@ module.exports = {
                             .setTimestamp();
 
                         await channel.send({ embeds: [embed] });
-                        console.log(`✅ [${task.name}] 已發送至 [${channel.name}]`);
+                        sendLog(client, `✅ [${task.name}] 已發送至 [${channel.name}]`);
 
                     } catch (error) {
-                        console.error(`❌ 任務 [${task.name}] 發送至頻道 ${channelId} 時發生錯誤:`, error.message);
+                        sendLog(client, `❌ 任務 [${task.name}] 發送至頻道 ${channelId} 時發生錯誤: ${error.message}`, 'error');
                     }
                 }
             }, {
@@ -121,7 +141,7 @@ module.exports = {
                 timezone: "Asia/Taipei"
             });
 
-            console.log(`✅ 已排程: ${task.name} -> 群組 [${task.channelGroup}]`);
+            sendLog(client, `✅ 已排程: ${task.name} -> 群組 [${task.channelGroup}]`);
         });
     }
 };
