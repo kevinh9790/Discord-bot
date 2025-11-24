@@ -1,4 +1,4 @@
-﻿const { log } = require('../utils/logger');
+﻿const log = require('../utils/logger');
 const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455"];
 
 // 🛠️ 設定除錯頻道 ID
