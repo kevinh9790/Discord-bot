@@ -59,6 +59,7 @@ const tasks = [
     // 範例任務 1：每月月初提醒
     {
         name: "每月月初提醒",
+        enabled: false,
         cronTime: "0 12 1 * *", // 每月 1 號的中午 12:00
         channelGroup: "monthly_reminders", // 🟢 設定群組名稱
         content: {
@@ -70,6 +71,7 @@ const tasks = [
     // 範例任務 2：每週五週報提醒
     {
         name: "每週五提醒",
+        enabled: false,
         cronTime: "0 17 * * 5", // 每週五下午 5:00 (17:00)
         channelGroup: "monthly_reminders", // 🟢 設定群組名稱
         content: {
@@ -81,6 +83,7 @@ const tasks = [
     // 範例任務 3：五分鐘測試
     {
         name: "五分鐘測試用",
+        enabled: false,
         cronTime: "0 */5 * * * *", // ⚠️ 注意：每5分鐘的寫法是 0 */5 * * * * (6位) 或 */5 * * * * (5位)
         channelGroup: "forTestFiveMins", // 🟢 設定群組名稱
         content: {
@@ -98,6 +101,12 @@ module.exports = {
         sendLog(client, '⏰ 載入定時發送任務...');
 
         tasks.forEach(task => {
+            // 🟢 檢查開關：如果沒啟用，直接跳過
+            if (task.enabled === false) {
+                console.log(`🚫 任務 [${task.name}] 已停用，跳過排程。`);
+                return; 
+            }
+
             if (!cron.validate(task.cronTime)) {
                 sendLog(client, `❌ 任務 [${task.name}] 的時間設定錯誤: ${task.cronTime}`, 'error');
                 return;
