@@ -5,6 +5,7 @@ const DEBUG_CHANNEL_ID = "1232356996779343944";
 
 // 輔助函數：發送 Log 到 Discord
 async function sendLog(client, message, type = 'info') {
+    if (type === 'error') console.error(message);
     else console.log(message);
 
     if (!DEBUG_CHANNEL_ID) return;
