@@ -38,7 +38,7 @@ module.exports = {
     name: 'ready',
     once: true,
     async execute(client) {
-        console.log(`✅ 已登入為 ${client.user.tag}`);
+        console.log(`✅ 已登入為 ${client.user.tag} `);
         console.log(`🛌 醒來於 ${new Date().toLocaleTimeString()}`);
 
         //#region 設定邀請連結
