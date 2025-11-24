@@ -23,7 +23,7 @@ module.exports = {
     const message = reaction.message;
 
     // 記錄一般訊息
-    await log(client, `🔍 偵測到 ${user.username} 在 <#${message.channel.id}> 對訊息按了 ${reaction.emoji.name}`);
+    // await log(client, `🔍 偵測到 ${user.username} 在 <#${message.channel.id}> 對訊息按了 ${reaction.emoji.name}`);
 
     //#region 📊 統計反應王
     const isIgnoredCategory = message.channel.parentId && IGNORED_CATEGORIES.includes(message.channel.parentId);
@@ -34,7 +34,7 @@ module.exports = {
         const totalReactions = message.reactions.cache.reduce((acc, r) => acc + r.count, 0);
 
         // 🟢 2. [新增] 印出當前分數與霸主分數的比對
-        await log(client, `🔢 [比對] 此訊息: ${totalReactions} 讚 | 目前霸主: ${stats.mostReacted.count} 讚`);
+        // await log(client, `🔢 [比對] 此訊息: ${totalReactions} 讚 | 目前霸主: ${stats.mostReacted.count} 讚`);
 
         if (totalReactions > stats.mostReacted.count) {
           await log(client, `⭐ [反應王更新] 舊紀錄: ${stats.mostReacted.count} -> 新紀錄: ${totalReactions} (頻道: <#${message.channel.id}>)`);
@@ -47,14 +47,14 @@ module.exports = {
           };
         } else {
             // 🟢 3. [開啟] 沒破紀錄也告訴你一聲 (測試完覺得太吵可以註解掉)
-            await log(client, `📉 [未更新] 數量不足 (${totalReactions} <= ${stats.mostReacted.count})`);
+            // await log(client, `📉 [未更新] 數量不足 (${totalReactions} <= ${stats.mostReacted.count})`);
         }
       } else {
         await log(client, "⚠️ client.dailyStats 尚未初始化 (請檢查 ready.js)", 'error');
       }
     } else {
         // 🟢 4. [修正] 被排除時正確回報 (原本這裡會報錯)
-        await log(client, `🛡️ [忽略] 此頻道在排除名單內，不計入統計`);
+        // await log(client, `🛡️ [忽略] 此頻道在排除名單內，不計入統計`);
     }
     //#endregion
 
@@ -71,16 +71,16 @@ module.exports = {
         
         if (addRoleId) {
             await member.roles.add(addRoleId);
-            await log(client, `✅ [身分組] 已為 ${user.username} 加上角色`);
+            // await log(client, `✅ [身分組] 已為 ${user.username} 加上角色`);
         }
 
         if (removeRoleId) {
             await member.roles.remove(removeRoleId);
-            await log(client, `❌ [身分組] 已為 ${user.username} 移除角色`);
+            // await log(client, `❌ [身分組] 已為 ${user.username} 移除角色`);
         }
       }
     } catch (err) {
-      await log(client, `🚨 [身分組] 執行錯誤：${err.message}`, 'error');
+      // await log(client, `🚨 [身分組] 執行錯誤：${err.message}`, 'error');
     }
     //#endregion
   },

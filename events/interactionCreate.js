@@ -1,4 +1,4 @@
-const { 
+﻿const { 
     Events, 
     ChannelType, 
     PermissionFlagsBits, 
@@ -31,7 +31,7 @@ module.exports = {
                 const user = interaction.user;
                 const category = interaction.channel.parent;
 
-                const existingChannel = guild.channels.cache.find(c => c.name === `ticket-${user.username.toLowerCase()}`);
+                const existingChannel = guild.channels.cache.find(c => c.name === `住客申請-${user.username.toLowerCase()}`);
                 if (existingChannel) {
                     return interaction.editReply({ content: `❌ 您已經有一個進行中的申請單：${existingChannel}` });
                 }
@@ -108,7 +108,7 @@ module.exports = {
 
             //#region --- 功能 B：關閉 Ticket ---
             if (interaction.customId === 'close_ticket') {
-                if (!interaction.channel.name.startsWith('ticket-')) {
+                if (!interaction.channel.name.startsWith('住客申請-')) {
                     return interaction.reply({ content: "這不是一個有效的 Ticket 頻道。", ephemeral: true });
                 }
                 await interaction.reply("🔒 申請單將在 5 秒後關閉...");
