@@ -1,5 +1,29 @@
 const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455"];
 
+// 🛠️ 設定除錯頻道 ID (請確認此 ID 正確且機器人有權限)
+const DEBUG_CHANNEL_ID = "1232356996779343944"; 
+
+// 輔助函數：發送 Log 到 Discord
+async function sendLog(client, message, type = 'info') {
+  // 1. 保持終端機也有 Log (方便你本機查看)
+  if (type === 'error') console.error(message);
+  else console.log(message);
+
+  if (!DEBUG_CHANNEL_ID) return;
+
+  try {
+      const channel = await client.channels.fetch(DEBUG_CHANNEL_ID).catch(() => null);
+      if (channel && channel.isTextBased()) {
+          const prefix = type === 'error' ? '❌ [錯誤]' : '📝 [Log]';
+          // 避免訊息過長
+          const safeMessage = message.length > 1900 ? message.substring(0, 1900) + '...' : message;
+          await channel.send(`${prefix} ${safeMessage}`).catch(() => {});
+      }
+  } catch (err) {
+      console.error('❌ [sendLog] 發送失敗:', err);
+  }
+}
+
 module.exports = {
   name: 'messageReactionAdd',
   async execute(reaction, user, client) {
@@ -12,7 +36,8 @@ module.exports = {
       if (reaction.partial) await reaction.fetch();
       if (reaction.message.partial) await reaction.message.fetch();
     } catch (error) {
-      console.error('❌ 無法讀取反應或訊息:', error);
+      const errorMsg = `❌ 無法讀取反應或訊息: ${error.message}`;
+      await sendLog(client, errorMsg, 'error');
       return;
     }
 
@@ -41,9 +66,12 @@ module.exports = {
           };
           // console.log(`⭐ 新的反應王誕生！數量: ${totalReactions} (來自 ${message.channel.name})`);
         }
+      } else {
+        await sendLog(client, "⚠️ client.dailyStats 尚未初始化 (請檢查 ready.js)", 'error');
       }
     } else {
-      // console.log(`🛡️ 反應未計入統計 (排除分類): ${message.channel.name}`);
+        // 這一行可以開啟，讓你知道為什麼沒更新 (因為數量不夠)
+        await sendLog(client, `📉 [未更新] 此訊息反應數 ${totalReactions} 小於等於目前霸主 (${stats.mostReacted.count})`);
     }
     //#endregion
 

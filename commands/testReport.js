@@ -19,13 +19,17 @@ module.exports = {
             return message.reply("⚠️ 數據尚未初始化，請檢查 ready.js 是否正確載入。");
         }
 
-        console.log('📊 手動觸發日報預覽...');
+        console.log('📊 [手動觸發] 開始產生預覽日報...');
 
         // --- A. 暫時結算語音時間 (只為了預覽，不更新原始資料) ---
         const now = Date.now();
         
         // 深拷貝一份 channels 數據，避免修改到原始 RAM 數據
         let previewChannels = JSON.parse(JSON.stringify(client.dailyStats.channels));
+        
+        // 取得目前正在語音中的人數
+        const activeVoiceCount = client.dailyStats.voiceSessions.size;
+        console.log(`🎙️ [語音結算] 目前有 ${activeVoiceCount} 人在語音頻道中，正在計算累積時間...`);
 
         // 把目前還在語音裡的人的時間加進預覽數據中
         client.dailyStats.voiceSessions.forEach((data, userId) => {
@@ -43,30 +47,32 @@ module.exports = {
         });
 
         // --- B. 整理數據 ---
+        // 使用 Object.entries 保留 ID
         const allStats = Object.entries(previewChannels).map(([id, data]) => ({
-            id: id, // 👈 把 ID 存下來，這樣等一下才能變成 <#ID>
-            ...data // 把原本的 name, msgCount, voiceMs 展開進來
+            id: id, 
+            ...data 
         }));
 
-        // 1. 訊息排名：只取訊息數 > 0 的
+        // 1. 訊息排名
         const msgRank = allStats
             .filter(data => data.msgCount > 0) 
             .sort((a, b) => b.msgCount - a.msgCount)
             .slice(0, 10);
-        // 2. 語音排名：只取語音時長 > 0 的
+
+        // 2. 語音排名
         const voiceRank = allStats
             .filter(data => data.voiceMs > 0)
             .sort((a, b) => b.voiceMs - a.voiceMs)
             .slice(0, 10);
 
+        console.log(`📈 [統計結果] 訊息活躍頻道數: ${msgRank.length} | 語音活躍頻道數: ${voiceRank.length}`);
+
         // --- C. 製作表格 ---
         let tableString = "頻道名稱             | 💬 訊息數 | 🎙️ 語音時長\n";
         tableString += "---------------------|----------|------------\n";
         
-        // 綜合排序：訊息多或語音長的排前面
-        // 表格排序：總活躍度 (訊息+語音)
         allStats
-            .filter(data => data.msgCount > 0 || data.voiceMs > 0) // 過濾掉完全沒動靜的
+            .filter(data => data.msgCount > 0 || data.voiceMs > 0)
             .sort((a,b) => (b.msgCount + b.voiceMs) - (a.msgCount + a.voiceMs))
             .forEach(stat => {
                 let name = stat.name.length > 12 ? stat.name.substring(0, 10) + ".." : stat.name;
@@ -84,21 +90,31 @@ module.exports = {
             .setDescription("這是手動觸發的預覽報表，**不會**清除目前的累積數據。")
             .setColor(0x00FF00) // 綠色代表測試
             .addFields(
-                { name: '🏆 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
-                { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. <#${c.id}>: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
-                //{ name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
+                { name: '🏆 訊息活躍排行', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
+                { name: '🗣️ 語音話癆排行', value: voiceRank.map((c, i) => `${i+1}. <#${c.id}>: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
+                { name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
             )
             .setTimestamp();
 
-        // --- E. 反應王 ---
+        // --- E. 反應王 (同步 ready.js 的格式與 Log) ---
         const bestMsg = client.dailyStats.mostReacted;
+        
+        console.log(`⭐ [反應王檢查] 目前最高紀錄: ${bestMsg.count} 個表情 | 作者: ${bestMsg.author}`);
+
         if (bestMsg.count > 0) {
             embed.addFields({ 
-                name: '⭐ 目前反應王', 
-                value: `獲得 **${bestMsg.count}** 個表情\n作者: ${bestMsg.author}\n內容: ${bestMsg.content.substring(0, 50)}...` 
+                name: '⭐ 本日最受歡迎訊息', 
+                value: `獲得 **${bestMsg.count}** 個表情\n作者: ${bestMsg.author}\n內容: ${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
+            });
+        } else {
+            // 預覽時也可以顯示目前沒有數據
+            embed.addFields({
+                name: '⭐ 本日最受歡迎訊息',
+                value: '目前尚未有熱門訊息 (Count: 0)'
             });
         }
 
         await message.reply({ embeds: [embed] });
+        console.log('✅ [手動觸發] 預覽日報發送完畢');
     },
 };
