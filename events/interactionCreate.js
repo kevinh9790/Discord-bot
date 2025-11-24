@@ -20,7 +20,7 @@ module.exports = {
         // ====================================================
         // 🔘 區域 1：按鈕互動處理 (Button Interactions)
         // ====================================================
-        //#region 按鈕互動處理
+        //#region 住客登記功能
         if (interaction.isButton()) {
             
             //#region --- 功能 A：開啟 Ticket ---
@@ -33,7 +33,7 @@ module.exports = {
 
                 const existingChannel = guild.channels.cache.find(c => c.name === `ticket-${user.username.toLowerCase()}`);
                 if (existingChannel) {
-                    return interaction.editReply({ content: `❌ 您已經有一個進行中的客服單：${existingChannel}` });
+                    return interaction.editReply({ content: `❌ 您已經有一個進行中的申請單：${existingChannel}` });
                 }
 
                 try {
@@ -49,19 +49,61 @@ module.exports = {
                     });
 
                     const closeRow = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId('close_ticket').setLabel('關閉客服單').setStyle(ButtonStyle.Danger).setEmoji('🔒')
+                        new ButtonBuilder().setCustomId('close_ticket').setLabel('關閉申請單').setStyle(ButtonStyle.Danger).setEmoji('🔒')
                     );
 
+                    // 1. 建立「樓層規範」Embed
+                    const rulesEmbed = new EmbedBuilder()
+                        .setTitle('📜 樓層規範')
+                        .setColor(0xFF0000) // 紅色 (代表重要規範)
+                        .setDescription(
+                            '1. 每位開發者皆可申請一層樓，並擁有該樓層的自主管理權\n' +
+                            '2. 樓層包含：一間文字頻道 + 一間語音頻道(可選)\n' +
+                            '3. 若為團隊申請樓層，請提交所需管理權限的人員名單\n' +
+                            '4. 樓層命名請勿有任何髒話、辱罵、色情等不雅字眼\n' +
+                            '5. 若為18禁的樓層，名稱前綴記得註記18禁符號🔞\n' +
+                            '6. 嚴禁具有任何歧視性的攻擊性言論(包含但不限於：政治、宗教、種族、國家等)，違者禁言2小時\n' +
+                            '7. 嚴禁惡意洗版，違者禁言2小時\n' +
+                            '8. 嚴禁發布18禁內容在非18禁頻道，違者禁言2小時\n' +
+                            '9. 若感到任何冒犯，請第一時間通知管理員，不要繼續回應\n' +
+                            '10. 聊天風氣應秉持理性、尊重、包容\n' +
+                            '11. 頻道內容鼓勵以遊戲相關的討論為主，但不只侷限於遊戲範疇，也可以是日常生活分享\n' +
+                            '12. 樓層每三個月會針對活躍度進行評估，活躍度過低的頻道將會視情況隱藏，請樓層負責人主動向管理員提出申訴\n\n' +
+                            '※以上規範，夜城擁有最終解釋權\n' +
+                            '-# 更新日期：2025/11/24'
+                        );
+
+                    // 2. 建立「申請格式」Embed
+                    const applyEmbed = new EmbedBuilder()
+                        .setTitle('📝 樓層申請格式')
+                        .setColor(0x00FF00) // 綠色 (代表可以開始填寫)
+                        .setDescription(
+                            '**頻道名稱：**\n' +
+                            '\n' +
+                            '**樓層用途：**\n' +
+                            '(遊戲開發進度分享、遊戲製作知識分享、開發者日常分享...等等)\n' +
+                            '\n' +
+                            '**是否需要語音頻道：**\n' +
+                            '(需要的話請填頻道名稱)\n' +
+                            '\n' +
+                            '**是否希望機器人能推播提醒進度的通知：**\n' +
+                            '(每月一次)\n' +
+                            '\n' +
+                            '**樓層管理員：**'
+                        );
+
+                    // 3. 發送訊息 (包含 content, embeds, components)
                     await ticketChannel.send({
-                        content: `${user} 您好！管理員很快會來協助您。\n問題解決後，請點擊下方按鈕關閉頻道。`,
+                        content: `${user} 冒險者您好！歡迎使用本服務，請詳閱規範後填寫申請表。`,
+                        embeds: [rulesEmbed, applyEmbed], // 這裡放入剛剛做好的兩張卡片
                         components: [closeRow]
                     });
 
-                    await interaction.editReply({ content: `✅ 已為您開設私人頻道：${ticketChannel}` });
+                    await interaction.editReply({ content: `✅ 請前往填寫入住申請單：${ticketChannel}` });
 
                 } catch (error) {
                     console.error(error);
-                    await interaction.editReply({ content: "⚠️ 建立頻道時發生錯誤，請檢查機器人權限。" });
+                    await interaction.editReply({ content: "⚠️ 發生不可預期異常，請聯繫管理員。" });
                 }
             }
             //#endregion
@@ -71,13 +113,13 @@ module.exports = {
                 if (!interaction.channel.name.startsWith('ticket-')) {
                     return interaction.reply({ content: "這不是一個有效的 Ticket 頻道。", ephemeral: true });
                 }
-                await interaction.reply("🔒 客服單將在 5 秒後刪除...");
+                await interaction.reply("🔒 申請單將在 5 秒後關閉...");
                 setTimeout(() => {
-                    interaction.channel.delete().catch(err => console.error("刪除頻道失敗:", err));
+                    interaction.channel.delete().catch(err => console.error("關閉頻道失敗:", err));
                 }, 5000);
             }
             //#endregion
-
+        //#endregion
             //#region --- 功能 C：開啟建議箱表單 (新增的部分) ---
             if (interaction.customId === 'open_suggestion_modal') {
                 const modal = new ModalBuilder()
@@ -108,7 +150,6 @@ module.exports = {
             }
             //#endregion
         }
-        //#endregion
 
         // ====================================================
         // 📝 區域 2：表單提交處理 (Modal Submits)
