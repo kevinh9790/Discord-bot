@@ -56,10 +56,12 @@ module.exports = {
         cron.schedule('0 0 0 * * *', async () => {
             console.log('📊 開始結算每日數據...');
             const guild = client.guilds.cache.first(); 
-            const logChannelId = process.env.LOG_CHANNEL_ID; 
+            const logChannelId = "1229095307124408385"; 
             const logChannel = guild?.channels.cache.get(logChannelId);
 
             if (!guild || !logChannel) return console.log("找不到伺服器或日誌頻道");
+            
+            await logChannel.send('📊 開始結算每日數據...');
 
             //#region --- A. 處理還在語音裡的人 (強行結算這一段時間，避免數據跨日遺失) ---
             const now = Date.now();
@@ -83,12 +85,21 @@ module.exports = {
             //#endregion
 
             //#region --- B. 整理數據 ---
-            const allStats = Object.values(client.dailyStats.channels);
+            const allStats = Object.entries(client.dailyStats.channels).map(([id, data]) => ({
+                id: id, 
+                ...data 
+            }));
 
             // 1. 訊息排名 (降序)
-            const msgRank = [...allStats].sort((a, b) => b.msgCount - a.msgCount).slice(0, 10);
+            const msgRank = allStats
+                .filter(data => data.msgCount > 0)
+                .sort((a, b) => b.msgCount - a.msgCount)
+                .slice(0, 10);
             // 2. 語音排名 (降序)
-            const voiceRank = [...allStats].sort((a, b) => b.voiceMs - a.voiceMs).slice(0, 10);
+            const voiceRank = allStats
+                .filter(data => data.voiceMs > 0)
+                .sort((a, b) => b.voiceMs - a.voiceMs)
+                .slice(0, 10);
             //#endregion
 
             //#region --- C. 製作表格 (使用 Code Block 讓排版對齊) ---
@@ -96,30 +107,29 @@ module.exports = {
             let tableString = "頻道名稱             | 💬 訊息數 | 🎙️ 語音時長\n";
             tableString += "---------------------|----------|------------\n";
             
-            allStats.sort((a,b) => b.msgCount - a.msgCount).forEach(stat => {
-                // 只有當有數據時才顯示
-                if (stat.msgCount === 0 && stat.voiceMs === 0) return;
-                
-                let name = stat.name.length > 12 ? stat.name.substring(0, 10) + ".." : stat.name;
-                let msg = stat.msgCount.toString().padStart(6); // 補齊6位
-                let time = formatDuration(stat.voiceMs);
-                
-                tableString += `${name.padEnd(20)} | ${msg}   | ${time}\n`;
-            });
+            allStats
+                .filter(data => data.msgCount > 0 || data.voiceMs > 0) // 過濾掉完全沒動靜的
+                .sort((a,b) => (b.msgCount + b.voiceMs) - (a.msgCount + a.voiceMs))
+                .forEach(stat => {
+                    let name = stat.name.length > 12 ? stat.name.substring(0, 10) + ".." : stat.name;
+                    let msg = stat.msgCount.toString().padStart(6); // 補齊6位
+                    let time = formatDuration(stat.voiceMs);
+                    
+                    tableString += `${name.padEnd(20)} | ${msg}   | ${time}\n`;
+                });
 
             // 如果表格太長，Discord 會不給發，這裡我們切分或簡化
-            // 這裡示範放在 Embed 裡 (如果超過 1024 字元要注意)
             if (tableString.length > 1000) tableString = tableString.substring(0, 950) + "\n... (下略)";
             //#endregion
 
             //#region --- D. 建立 Embed ---
             const embed = new EmbedBuilder()
-                .setTitle(`📅 ${new Date().toLocaleDateString()} 伺服器日報`)
+                .setTitle(`📅 ${new Date().toLocaleDateString()} 頻道排行榜`)
                 .setColor(0xFFD700) // 金色
                 .addFields(
-                    { name: '🏆 訊息活躍排行', value: msgRank.map((c, i) => `${i+1}. **${c.name}**: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
-                    { name: '🗣️ 語音話癆排行', value: voiceRank.map((c, i) => `${i+1}. **${c.name}**: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
-                    { name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
+                    { name: '🏆 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. **${c.name}**: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
+                    { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. **${c.name}**: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
+                    //{ name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
                 )
                 .setTimestamp();
             //#endregion
