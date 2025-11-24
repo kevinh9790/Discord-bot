@@ -51,6 +51,26 @@ for (const file of eventFiles) {
   }
 }
 
+// 📂 [新增] 載入排程任務 (Jobs)
+const jobsPath = path.join(__dirname, "jobs");
+if (fs.existsSync(jobsPath)) {
+    const jobFiles = fs.readdirSync(jobsPath).filter(file => file.endsWith(".js"));
+    
+    // 因為排程需要在 client 準備好後才能發送訊息，所以我們把它掛在 ready 事件後執行
+    client.once('ready', () => {
+        console.log('⏰ 正在初始化排程任務...');
+        for (const file of jobFiles) {
+            const filePath = path.join(jobsPath, file);
+            const job = require(filePath);
+            if (job.execute) {
+                job.execute(client);
+            }
+        }
+    });
+} else {
+    console.log('⚠️ jobs 資料夾不存在，跳過載入排程任務');
+}
+
 // 🚪 登入 Discord 
 client.login(process.env.TOKEN);
 
@@ -61,7 +81,3 @@ setInterval(() => {
     .then(() => console.log(`🌀 dev自我 ping 成功 (${new Date().toLocaleTimeString()})`))
     .catch(() => console.warn("⚠️ 自我 ping 失敗><"));
 }, 1000 * 60 * 4);
-
-client.once("ready", () => {
-  console.log(`✅ Bot 已啟動：${client.user.tag}，啟動時間：${new Date().toLocaleTimeString()}`);
-});
