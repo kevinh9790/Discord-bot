@@ -34,7 +34,7 @@ module.exports = {
         const totalReactions = message.reactions.cache.reduce((acc, r) => acc + r.count, 0);
 
         // 🟢 2. [新增] 印出當前分數與霸主分數的比對
-        // await sendLog(client, `🔢 [比對] 此訊息: ${totalReactions} 讚 | 目前霸主: ${stats.mostReacted.count} 讚`);
+        await log(client, `🔢 [比對] 此訊息: ${totalReactions} 讚 | 目前霸主: ${stats.mostReacted.count} 讚`);
 
         if (totalReactions > stats.mostReacted.count) {
           await log(client, `⭐ [反應王更新] 舊紀錄: ${stats.mostReacted.count} -> 新紀錄: ${totalReactions} (頻道: <#${message.channel.id}>)`);
@@ -54,7 +54,7 @@ module.exports = {
       }
     } else {
         // 🟢 4. [修正] 被排除時正確回報 (原本這裡會報錯)
-        await lLog(client, `🛡️ [忽略] 此頻道在排除名單內，不計入統計`);
+        await log(client, `🛡️ [忽略] 此頻道在排除名單內，不計入統計`);
     }
     //#endregion
 
