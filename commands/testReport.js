@@ -86,13 +86,13 @@ module.exports = {
 
         // --- D. 建立 Embed ---
         const embed = new EmbedBuilder()
-            .setTitle(`📊 [預覽] 目前統計數據`)
+            .setTitle(`📊 [測試] 目前統計數據`)
             .setDescription("這是手動觸發的預覽報表，**不會**清除目前的累積數據。")
             .setColor(0x00FF00) // 綠色代表測試
             .addFields(
-                { name: '🏆 訊息活躍排行', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
-                { name: '🗣️ 語音話癆排行', value: voiceRank.map((c, i) => `${i+1}. <#${c.id}>: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
-                { name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
+                { name: '🏆 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
+                { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. <#${c.id}>: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true }
+                //{ name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
             )
             .setTimestamp();
 

@@ -83,8 +83,6 @@ module.exports = {
                 client.dailyStats = { channels: {}, mostReacted: { count: 0 }, voiceSessions: new Map() };
                 return;
             }
-            
-            await logChannel.send('📊 開始結算每日數據...');
 
             //#region --- A. 處理還在語音裡的人 (強行結算這一段時間，避免數據跨日遺失) ---
             const now = Date.now();
@@ -147,10 +145,10 @@ module.exports = {
 
             //#region --- D. 建立 Embed ---
             const embed = new EmbedBuilder()
-                .setTitle(`📅 ${new Date().toLocaleDateString()} 頻道排行榜`)
+                .setTitle(`🏆 本日活躍排行榜`)
                 .setColor(0xFFD700) // 金色
                 .addFields(
-                    { name: '🏆 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. **${c.name}**: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
+                    { name: '💬 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. **${c.name}**: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
                     { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. **${c.name}**: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
                     //{ name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
                 )
