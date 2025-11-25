@@ -6,9 +6,10 @@ module.exports = {
       message.reply({
         content:[
             `📣 加入我們的社群平台：`,
-`- Threads：<https://www.threads.net/@nightcastle888>`,
-`- Instagram：<https://www.instagram.com/nightcastle888>`,
 `- Youtube：<https://www.youtube.com/@nightcastle888>`,
+`- Instagram：<https://www.instagram.com/nightcastle888>`,
+`- Facebook：<https://www.facebook.com/share/1FjCEPDzQJ/>`,
+`- Threads：<https://www.threads.net/@nightcastle888>`,
 `- Twitch：<https://www.twitch.tv/nightcastle888>`,
 `- Website：<https://gamenightcastle.com/>`
         ].join('\n'),
