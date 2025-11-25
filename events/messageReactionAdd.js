@@ -61,7 +61,7 @@ module.exports = {
         }
       } else {
         // 🟢 [新增] 如果是舊訊息，印出 Log 告知
-        await sendLog(client, `🕰️ [忽略] 這是舊訊息 (${msgDate})，不列入今日 (${todayDate}) 反應王統計`);
+        await log(client, `🕰️ [忽略] 這是舊訊息 (${msgDate})，不列入今日 (${todayDate}) 反應王統計`);
       }
     } else {
       // 被排除時正確回報 (原本這裡會報錯)
