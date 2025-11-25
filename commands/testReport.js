@@ -104,7 +104,7 @@ module.exports = {
         if (bestMsg.count > 0) {
             embed.addFields({ 
                 name: '⭐ 本日最受歡迎訊息', 
-                value: `獲得 **${bestMsg.count}** 個表情\n作者: ${bestMsg.author}\n內容: ${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
+                value: `獲得 **${bestMsg.count}** 個表情\n<@${bestMsg.author.id}>\n${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
             });
         } else {
             // 預覽時也可以顯示目前沒有數據
