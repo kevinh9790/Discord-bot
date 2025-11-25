@@ -158,13 +158,16 @@ module.exports = {
             //#region --- E. 特別標示：本日反應王 ---
             const bestMsg = client.dailyStats.mostReacted;
             
-            // 🟢 [修改點] 將 Log 發送到 DC
+            
             await sendLog(client, `📊 [日報結算] 反應王數據: Count=${bestMsg.count}, Author=${bestMsg.author}`);
 
             if (bestMsg.count > 0) {
+
+                const authorDisplay = bestMsg.authorId ? `<@${bestMsg.authorId}>` : bestMsg.author;
+
                 embed.addFields({ 
                     name: '⭐ 本日最受歡迎訊息', 
-                    value: `獲得 **${bestMsg.count}** 個表情\n<@${bestMsg.author.id}>\n${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
+                    value: `獲得 **${bestMsg.count}** 個表情\n${authorDisplay}\n${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
                 });
             } else {
                 embed.addFields({
@@ -183,7 +186,7 @@ module.exports = {
             await sendLog(client, '🔄 數據已重置');
             //#endregion
            } catch (fatalError) {
-               // 這是最後一道防線，如果日報程式碼炸了，這裡會接住並通知你
+               
                await sendLog(client, `❌ [嚴重錯誤] 自動日報執行失敗: ${fatalError.message}`, 'error');
            }
 

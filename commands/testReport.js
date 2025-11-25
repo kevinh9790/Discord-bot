@@ -102,9 +102,12 @@ module.exports = {
         console.log(`⭐ [反應王檢查] 目前最高紀錄: ${bestMsg.count} 個表情 | 作者: ${bestMsg.author}`);
 
         if (bestMsg.count > 0) {
+
+            const authorDisplay = bestMsg.authorId ? `<@${bestMsg.authorId}>` : bestMsg.author;
+
             embed.addFields({ 
                 name: '⭐ 本日最受歡迎訊息', 
-                value: `獲得 **${bestMsg.count}** 個表情\n<@${bestMsg.author.id}>\n${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
+                value: `獲得 **${bestMsg.count}** 個表情\n${authorDisplay}\n${bestMsg.content.substring(0, 50)}...\n[👉 點擊跳轉到訊息](${bestMsg.url})` 
             });
         } else {
             // 預覽時也可以顯示目前沒有數據

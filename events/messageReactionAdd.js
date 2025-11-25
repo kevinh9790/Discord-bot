@@ -50,7 +50,8 @@ module.exports = {
               count: totalReactions,
               url: message.url,
               content: message.content || "[圖片/附件]",
-              author: message.author ? message.author.tag : "未知用戶"
+              author: message.author ? message.author.tag : "未知用戶",
+              authorId: message.author ? message.author.id : null
             };
           } else {
             // 沒破紀錄也告訴你一聲 (測試完覺得太吵可以註解掉)
