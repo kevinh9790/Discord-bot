@@ -8,10 +8,12 @@
     ModalBuilder, 
     TextInputBuilder, 
     TextInputStyle, 
-    EmbedBuilder 
+    EmbedBuilder,
+    AttachmentBuilder
 } = require('discord.js');
 
 const SUGGESTION_CHANNEL_ID = "1441340015299792988"; 
+const TICKET_LOG_CHANNEL_ID = "1232356996779343944";
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -84,8 +86,8 @@ module.exports = {
                             '**是否需要語音頻道：**\n' +
                             '(需要的話請填頻道名稱)\n' +
                             '\n' +
+                            '**分享內容是否包含18+資訊：**\n' +
                             '**是否希望機器人能推播提醒進度的通知：**\n' +
-                            '(每月一次)\n' +
                             '\n' +
                             '**樓層管理員：**'
                         );
@@ -112,6 +114,59 @@ module.exports = {
                     return interaction.reply({ content: "這不是一個有效的 Ticket 頻道。", ephemeral: true });
                 }
                 await interaction.reply("🔒 申請單將在 5 秒後關閉...");
+
+                try {
+                    // 抓取最後 100 則訊息 (如果對話很多，可以考慮循環抓取，但通常 100 夠用)
+                    const messages = await interaction.channel.messages.fetch({ limit: 100 });
+                    
+                    // 格式化訊息：[時間] 作者: 內容
+                    // reverse() 是為了讓紀錄從最早的開始排
+                    const transcript = messages.reverse().map(m => {
+                        const time = m.createdAt.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+                        const content = m.content || (m.embeds.length ? '[嵌入內容]' : '[圖片/檔案]');
+                        const attachments = m.attachments.size > 0 ? ` [附件: ${m.attachments.map(a => a.url).join(', ')}]` : '';
+                        return `[${time}] ${m.author.tag}: ${content}${attachments}`;
+                    }).join('\n');
+
+                    const logChannel = interaction.guild.channels.cache.get(TICKET_LOG_CHANNEL_ID);
+                    
+                    if (logChannel) {
+                        const embed = new EmbedBuilder()
+                            .setTitle(`🔒 申請單已關閉：${interaction.channel.name}`)
+                            .setColor(0xFF0000)
+                            .addFields(
+                                { name: '關閉者', value: interaction.user.tag, inline: true },
+                                { name: '頻道名稱', value: interaction.channel.name, inline: true },
+                                { name: '訊息數量', value: `${messages.size} 則`, inline: true }
+                            )
+                            .setTimestamp();
+
+                        // 🟢 2. 判斷長度並發送
+                        if (transcript.length < 1900) {
+                            // 如果內容不長，直接用 Code Block 發送
+                            await logChannel.send({ 
+                                embeds: [embed],
+                                content: `**📝 對話紀錄：**\n\`\`\`text\n${transcript}\n\`\`\`` 
+                            });
+                        } else {
+                            // 如果內容太長，轉成 .txt 檔案發送 (這樣才不會太長一串)
+                            const buffer = Buffer.from(transcript, 'utf-8');
+                            const attachment = new AttachmentBuilder(buffer, { name: `transcript-${interaction.channel.name}.txt` });
+                            
+                            await logChannel.send({ 
+                                embeds: [embed],
+                                content: `**📝 對話紀錄過長，已轉為檔案附件：**`,
+                                files: [attachment] 
+                            });
+                        }
+                    } else {
+                        console.warn(`⚠️ 找不到 Log 頻道 (${TICKET_LOG_CHANNEL_ID})，無法備份紀錄。`);
+                    }
+
+                } catch (err) {
+                    console.error("備份紀錄失敗:", err);
+                }
+                
                 setTimeout(() => {
                     interaction.channel.delete().catch(err => console.error("關閉頻道失敗:", err));
                 }, 5000);
