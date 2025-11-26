@@ -73,7 +73,7 @@ module.exports = {
             await sendLog(client, '📊 開始自動結算每日數據...');
 
             // 1. 抓取日報要發送的頻道
-            const logChannelId = "1229095307124408385"; 
+            const logChannelId = "859423355626717215"; 
             const logChannel = await client.channels.fetch(logChannelId).catch(() => null);
 
             // 2. 確保數據存在
