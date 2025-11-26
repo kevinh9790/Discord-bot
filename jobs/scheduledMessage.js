@@ -11,6 +11,7 @@ const DEBUG_CHANNEL_ID = "1232356996779343944";
 
 // 輔助函數：發送 Log 到 Discord
 async function sendLog(client, message, type = 'info') {
+    if (type === 'error') console.error(message);
     console.log(message); // 保持終端機也有 Log
 
     if (!DEBUG_CHANNEL_ID) return;
@@ -29,20 +30,27 @@ async function sendLog(client, message, type = 'info') {
 }
 
 // 輔助函數：讀取指定群組的頻道列表
-function getScheduledChannels(groupName) {
-    if (!fs.existsSync(channelsFilePath)) {
-        return [];
-    }
+async function getScheduledChannels(client, groupName) {
+    if (!fs.existsSync(channelsFilePath)) return [];
+
     try {
         const fileContent = fs.readFileSync(channelsFilePath, 'utf8');
         const data = JSON.parse(fileContent);
         
-        // 如果資料格式是舊版的陣列，或者該群組不存在，回傳空陣列
-        if (Array.isArray(data)) return [];
-        return data[groupName] || [];
+        const rawList = data[groupName];
+        if (!rawList) return [];
+
+        // 正規化：把舊的字串格式轉成新的物件格式，方便後續統一處理
+        // 舊: ["123"] -> 新: [{ channelId: "123", mentionUserId: null }]
+        return rawList.map(item => {
+            if (typeof item === 'string') {
+                return { channelId: item, mentionUserId: null };
+            }
+            return item; // 已經是物件就直接回傳
+        });
+
     } catch (err) {
-        // 這裡無法使用 sendLog，因為還沒有 client 物件，只能印在終端機
-        console.error('❌ 讀取排程頻道設定檔失敗:', err);
+        await sendLog(client, `❌ [Debug] 讀取設定檔失敗: ${err.message}`, 'error');
         return [];
     }
 }
@@ -103,7 +111,7 @@ module.exports = {
         tasks.forEach(task => {
             // 🟢 檢查開關：如果沒啟用，直接跳過
             if (task.enabled === false) {
-                console.log(`🚫 任務 [${task.name}] 已停用，跳過排程。`);
+                // console.log(`🚫 任務 [${task.name}] 已停用，跳過排程。`);
                 return; 
             }
 
@@ -113,37 +121,49 @@ module.exports = {
             }
 
             cron.schedule(task.cronTime, async () => {
-                sendLog(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
-                
-                // 🟢 依據該任務設定的群組，讀取對應的頻道列表
-                const currentChannels = getScheduledChannels(task.channelGroup);
+                try {
+                    await sendLog(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
+                    
+                    const currentChannels = await getScheduledChannels(client, task.channelGroup);
 
-                if (currentChannels.length === 0) {
-                    sendLog(client, `⚠️ 任務 [${task.name}] (${task.channelGroup}) 沒有設定任何發送頻道，跳過執行。`, 'info');
-                    return;
-                }
+                    if (currentChannels.length === 0) return;
 
-                for (const channelId of currentChannels) {
-                    try {
-                        const channel = await client.channels.fetch(channelId).catch(() => null);
+                    for (const entry of currentChannels) {
+                        // 解構取得 ID 和 綁定用戶
+                        const { channelId, mentionUserId } = entry;
 
-                        if (!channel || !channel.isTextBased()) {
-                            sendLog(client, `⚠️ 任務 [${task.name}] 跳過無效頻道 ID: ${channelId}`, 'info');
-                            continue;
+                        try {
+                            const channel = await client.channels.fetch(channelId).catch(() => null);
+
+                            if (!channel || !channel.isTextBased()) {
+                                await sendLog(client, `⚠️ 無效頻道: ${channelId}`, 'info');
+                                continue;
+                            }
+
+                            const embed = new EmbedBuilder()
+                                .setTitle(task.content.title)
+                                .setDescription(task.content.description)
+                                .setColor(task.content.color || 0xFFFFFF)
+                                .setTimestamp();
+
+                            // 🟢 準備發送內容
+                            const payload = { embeds: [embed] };
+                            
+                            // 如果有綁定用戶，加在 content 裡 (這樣才會亮紅燈通知)
+                            if (mentionUserId) {
+                                payload.content = `<@${mentionUserId}> 來分享進度囉！`; 
+                                // 如果只想純標記不講話，就用: payload.content = `<@${mentionUserId}>`;
+                            }
+
+                            await channel.send(payload);
+                            await sendLog(client, `✅ 已發送至 [${channel.name}] ${mentionUserId ? `(標記了 ${mentionUserId})` : ''}`);
+
+                        } catch (error) {
+                            await sendLog(client, `❌ 發送失敗 (${channelId}): ${error.message}`, 'error');
                         }
-
-                        const embed = new EmbedBuilder()
-                            .setTitle(task.content.title)
-                            .setDescription(task.content.description)
-                            .setColor(task.content.color || 0xFFFFFF)
-                            .setTimestamp();
-
-                        await channel.send({ embeds: [embed] });
-                        sendLog(client, `✅ [${task.name}] 已發送至 [${channel.name}]`);
-
-                    } catch (error) {
-                        sendLog(client, `❌ 任務 [${task.name}] 發送至頻道 ${channelId} 時發生錯誤: ${error.message}`, 'error');
                     }
+                } catch (fatalError) {
+                    console.error(`❌ [FATAL] ${task.name} 崩潰:`, fatalError);
                 }
             }, {
                 scheduled: true,

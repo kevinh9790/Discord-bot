@@ -148,8 +148,8 @@ module.exports = {
                 .setTitle(`🏆 本日活躍排行榜`)
                 .setColor(0xFFD700) // 金色
                 .addFields(
-                    { name: '💬 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. **${c.name}**: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
-                    { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. **${c.name}**: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
+                    { name: '💬 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
+                    { name: '🗣️ 語音活躍頻道', value: voiceRank.map((c, i) => `${i+1}. <#${c.id}>: ${formatDuration(c.voiceMs)}`).join('\n') || '無數據', inline: true },
                     //{ name: '📊 詳細數據表', value: `\`\`\`text\n${tableString}\`\`\`` }
                 )
                 .setTimestamp();
