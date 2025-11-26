@@ -31,7 +31,7 @@ module.exports = {
             return message.reply("❌ 只有管理員可以使用此指令。");
         }
 
-        // 參數: &推播設定 <動作> <群組> [參數1] [參數2]
+        // 參數: &推播設定 設定/取消 <群組> [頻道ID] [用戶ID]
         const action = args[0]; // "設定" 或 "取消"
         const groupName = args[1]; // 群組名稱
 
