@@ -92,7 +92,7 @@ const tasks = [
     // 範例任務 3：五分鐘測試
     {
         name: "五分鐘測試用",
-        enabled: true,
+        enabled: false,
         cronTime: "0 */5 * * * *", // ⚠️ 注意：每5分鐘的寫法是 0 */5 * * * * (6位) 或 */5 * * * * (5位)
         channelGroup: "forTestFiveMins", // 🟢 設定群組名稱
         content: {
