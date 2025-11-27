@@ -5,7 +5,7 @@ module.exports = {
     execute(message) {
       message.reply({
         content:[
-            `我要吃變當哦哦`
+            `我要吃變當哦`
         ].join('\n'),
         allowedMentions: { parse: [] },
         embeds:[]//禁用嵌入卡片
