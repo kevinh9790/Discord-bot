@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+﻿const { EmbedBuilder } = require('discord.js');
 
 // 輔助函數：將毫秒轉為時:分:秒
 function formatDuration(ms) {
@@ -87,7 +87,7 @@ module.exports = {
         // --- D. 建立 Embed ---
         const embed = new EmbedBuilder()
             .setTitle(`📊 [測試] 目前統計數據`)
-            .setDescription("這是手動觸發的預覽報表，**不會**清除目前的累積數據。")
+            .setDescription("這是手動觸發的預覽報表")
             .setColor(0x00FF00) // 綠色代表測試
             .addFields(
                 { name: '🏆 訊息活躍頻道', value: msgRank.map((c, i) => `${i+1}. <#${c.id}>: ${c.msgCount} 則`).join('\n') || '無數據', inline: true },
