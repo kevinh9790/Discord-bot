@@ -2,7 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 // 定義要排除的 ID
-const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455"]; 
+const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455", "1440221111228043394"]; 
 const IGNORED_ROLES = ["1229465574074224720"];
 
 module.exports = {

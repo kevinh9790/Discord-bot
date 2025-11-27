@@ -13,7 +13,7 @@
 } = require('discord.js');
 
 const SUGGESTION_CHANNEL_ID = "1441340015299792988"; 
-const TICKET_LOG_CHANNEL_ID = "1232356996779343944";
+const TICKET_LOG_CHANNEL_ID = "1443055216655339595";
 
 module.exports = {
     name: Events.InteractionCreate,
