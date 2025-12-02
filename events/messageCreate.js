@@ -16,7 +16,7 @@ module.exports = {
          2. 不是排除的分類
          3. 不是排除的身分組
          判斷是否為「不想統計」的訊息*/
-        const isCommand = message.content.startsWith("&");
+        const isCommand = message.content.startsWith("!");
         const isIgnoredCategory = message.channel.parentId && IGNORED_CATEGORIES.includes(message.channel.parentId);
         const isIgnoredRole = message.member.roles.cache.some(role => IGNORED_ROLES.includes(role.id));
 

@@ -1,11 +1,11 @@
 ﻿// commands/ForTest.js
 module.exports = {
-    name: "大便",
+    name: "想去論壇文章",
     description: "大便香腸",
     execute(message) {
       message.reply({
         content:[
-            `我要吃變當哦`
+            `<#1445248647871729795>`
         ].join('\n'),
         allowedMentions: { parse: [] },
         embeds:[]//禁用嵌入卡片

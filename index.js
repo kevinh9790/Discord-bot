@@ -73,11 +73,3 @@ if (fs.existsSync(jobsPath)) {
 
 // 🚪 登入 Discord 
 client.login(process.env.TOKEN);
-
-// 🔁 自我 ping
-const PING_URL = "https://discord-bot-production-8a80.up.railway.app/";
-setInterval(() => {
-  fetch(PING_URL)
-    .then(() => console.log(`🌀 dev自我 ping 成功 (${new Date().toLocaleTimeString()})`))
-    .catch(() => console.warn("⚠️ 自我 ping 失敗><"));
-}, 1000 * 60 * 4);
