@@ -9,7 +9,7 @@ const IGNORED_ROLES = ["1229465574074224720"];
 //定義開發進度的前綴
 const DEV_LOG_CONFIG = {
   triggerPrefix: "開發進度",
-    sourceChannelId: "1229095307124408385",
+  sourceChannelId: "1229095307124408385",//記得之後改成補血溫泉的ID
   targetForumId: "1230535598259834950"
 };
 
