@@ -9,8 +9,8 @@ const IGNORED_ROLES = ["1229465574074224720"];
 //定義開發進度的前綴
 const DEV_LOG_CONFIG = {
   triggerPrefix: "開發進度",
-  sourceChannelId: "1447566126102872217",
-  targetForumId: "1447566187339841587"
+  sourceChannelId: "1440593941073231932",
+  targetForumId: "1230535598259834950"
 };
 
 module.exports = {
