@@ -73,23 +73,35 @@ const tasks = [
         channelGroup: "monthly_reminders", // 🟢 設定群組名稱
         content: {
             title: "📅 開發進度分享",
-            description: "各位冒險者辛苦了！這個月有做甚麼進度內容呢？\n請到<#1440593941073231932>和大家分享！",
+            description: "冒險者辛苦了！有做甚麼進度內容呢？\n請到<#1440593941073231932>和大家分享！",
             color: 0x0099FF // 藍色
         }
     },
-    // 範例任務 2：每週五週報提醒
+    // 範例任務 2：每週一週報提醒
     {
-        name: "每週五提醒",
-        enabled: false,
-        cronTime: "0 17 * * 5", // 每週五下午 5:00 (17:00)
-        channelGroup: "Friday_reminders", // 🟢 設定群組名稱
+        name: "每週一提醒",
+        enabled: true,
+        cronTime: "0 20 * * 1", // 每週一 20:00
+        channelGroup: "Monday", // 🟢 設定群組名稱
         content: {
-            title: "📝 每週五提醒",
-            description: "這是每週五提醒",
+            title: "📝 開發進度分享",
+            description: "冒險者辛苦了！有做甚麼進度內容呢？\n請到<#1440593941073231932>和大家分享！",
             color: 0x00FF00 // 綠色
         }
     },
-    // 範例任務 3：五分鐘測試
+    // 範例任務 3：每15天提醒
+    {
+        name: "每15天提醒",
+        enabled: true,
+        cronTime: "0 20 1,15 * *", // 每月1號,15號 20:00 提醒
+        channelGroup: "half_monthly", // 🟢 設定群組名稱
+        content: {
+            title: "📝 開發進度分享",
+            description: "冒險者辛苦了！有做甚麼進度內容呢？\n請到<#1440593941073231932>和大家分享！",
+            color: 0x00FF00 // 綠色
+        }
+    },
+    // 範例任務：五分鐘測試
     {
         name: "五分鐘測試用",
         enabled: false,
