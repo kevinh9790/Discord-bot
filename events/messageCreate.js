@@ -13,6 +13,11 @@ const DEV_LOG_CONFIG = {
   targetForumId: "1230535598259834950"
 };
 
+// 🌟 新增：快取儲存空間 (放在這裡才能在不同訊息間共用)
+// 格式: Map<UserId, { threads: Array, timestamp: Number }>
+const threadCache = new Map();
+const CACHE_DURATION = 60 * 1000; // 快取有效時間：60秒
+
 module.exports = {
   name: "messageCreate",
   async execute(message) {
@@ -95,28 +100,76 @@ module.exports = {
         }
 
         // 2. 搜尋該作者的對應貼文 (改用模糊比對)
-        const activeThreads = await forumChannel.threads.fetchActive();
+        // A. 抓取「活躍中」的貼文
+        const activeData = await forumChannel.threads.fetchActive();
 
-        // 先過濾出「該作者」擁有的貼文
-        const userThreads = activeThreads.threads.filter(t => t.ownerId === message.author.id);
+        // 將 Collection 轉為 Array 並過濾出作者的文章
+        const userActiveThreads = activeData.threads.filter(t => t.ownerId === message.author.id);
 
         let targetThread = null;
         let maxScore = 0;
-        const THRESHOLD = 0.4; // 相似度門檻 (0.0 ~ 1.0)，建議 0.4 或 0.5，太低會誤判
+        const THRESHOLD = 0.4; // 相似度門檻
 
-        userThreads.forEach(thread => {
-          // 計算相似度分數
+        // 先在活躍列表中找找看有沒有「完全命中」或「高度相似」的
+        userActiveThreads.forEach(thread => {
           const score = getSimilarity(gameName, thread.name);
-
-          // Debug: 可以在這裡 console.log 看看分數，方便調整
-          // console.log(`[比對] 輸入:${gameName} vs 標題:${thread.name} = 分數:${score.toFixed(2)}`);
-
-          // 找出最高分且超過門檻的
-          if (score > maxScore && score >= THRESHOLD) {
+          if (score > maxScore) {
             maxScore = score;
             targetThread = thread;
           }
         });
+
+        // 如果在活躍貼文裡已經找到非常像的 (分數 >= 0.9)，就直接用，不用浪費資源去抓封存的
+        // 這樣可以節省 API 呼叫，也不用讀取快取
+        if (maxScore < 0.9) {
+
+          // B. 活躍的找不到(或分數不夠高)，才去處理「已封存」
+          let userArchivedThreads = [];
+          const cacheKey = message.author.id;
+          const now = Date.now();
+          const cachedData = threadCache.get(cacheKey);
+
+          // 檢查快取是否有效
+          if (cachedData && (now - cachedData.timestamp < CACHE_DURATION)) {
+            // console.log(`[DevLog] 使用快取資料 (User: ${message.author.username})`);
+            userArchivedThreads = cachedData.threads;
+          } else {
+            // 快取失效或不存在，呼叫 Discord API
+            // console.log(`[DevLog] 呼叫 API 抓取封存列表 (User: ${message.author.username})`);
+            try {
+              const archivedData = await forumChannel.threads.fetchArchived({
+                type: 'public',
+                fetchAll: true,
+                limit: 50
+              });
+
+              // 為了節省記憶體，我們只存「這個作者」的封存文章進快取
+              // archivedData.threads 是一個 Collection，我們轉成 Array
+              const allArchived = Array.from(archivedData.threads.values());
+              userArchivedThreads = allArchived.filter(t => t.ownerId === message.author.id);
+
+              // 更新快取
+              threadCache.set(cacheKey, {
+                threads: userArchivedThreads,
+                timestamp: now
+              });
+
+            } catch (err) {
+              console.error("❌ 無法抓取封存列表 (可能被 Rate Limit):", err);
+              // 失敗時不中斷，就用空的陣列繼續
+            }
+          }
+
+          // C. 重新比對所有文章 (活躍 + 封存)
+          // 我們把剛才抓到的封存文章加入比對行列
+          userArchivedThreads.forEach(thread => {
+            const score = getSimilarity(gameName, thread.name);
+            if (score > maxScore) {
+              maxScore = score;
+              targetThread = thread;
+            }
+          });
+        }
 
         // ❌ 錯誤情況 B：找不到對應文章 (或是相似度都太低)
         if (!targetThread) {
@@ -141,55 +194,7 @@ module.exports = {
       return;
     }
     //#endregion
-
-    /**
- * 計算兩個字串的相似度 (Dice Coefficient)
- * 會自動移除符號並轉小寫，支援中文與英文
- * @param {string} str1 輸入的名稱
- * @param {string} str2 比較對象(標題)
- * @returns {number} 0.0 ~ 1.0 (1.0 代表完全一樣)
- */
-    function getSimilarity(str1, str2) {
-      // 1. 清洗字串：轉小寫，移除所有非文字(標點符號、括號、空白)
-      // 這樣《布林》跟 布林 會變成一樣的 "布林"
-      const clean = (s) => s.toLowerCase().replace(/[^\w\u4e00-\u9fa5]/g, "");
-
-      const s1 = clean(str1);
-      const s2 = clean(str2);
-
-      // 2. 特殊狀況判斷
-      if (!s1 || !s2) return 0;
-      if (s1 === s2) return 1; // 完全一樣
-      if (s2.includes(s1)) return 0.9; // 標題包含輸入 (例如輸入"哥布林"，標題"布林布林哥布林") 給予極高分
-
-      // 3. Bigram (雙字切分) 演算法
-      const getBigrams = (string) => {
-        const bigrams = [];
-        for (let i = 0; i < string.length - 1; i++) {
-          bigrams.push(string.substring(i, i + 2));
-        }
-        return bigrams;
-      };
-
-      const s1Gram = getBigrams(s1);
-      const s2Gram = getBigrams(s2);
-
-      if (s1Gram.length === 0 || s2Gram.length === 0) return 0;
-
-      let intersection = 0;
-      // 計算重疊的字組數量
-      for (let i = 0; i < s1Gram.length; i++) {
-        const item = s1Gram[i];
-        if (s2Gram.includes(item)) {
-          intersection++;
-          // 避免重複計算同一個 bigram，這裡簡單處理即可，若要嚴謹可移除 s2Gram 中的該元素
-        }
-      }
-
-      // Dice 公式: (2 * 交集數量) / (集合A長度 + 集合B長度)
-      return (2.0 * intersection) / (s1Gram.length + s2Gram.length);
-    }
-
+    
     // === 🎯 指令處理邏輯 ===
 
     if (!isCommand) return;
@@ -239,7 +244,7 @@ function getSimilarity(str1, str2) {
   // 1. 清洗字串：轉小寫，移除所有非文字(標點符號、括號、空白)
   // 這樣《布林》跟 布林 會變成一樣的 "布林"
   const clean = (s) => s.toLowerCase().replace(/[^\w\u4e00-\u9fa5]/g, "");
-  
+
   const s1 = clean(str1);
   const s2 = clean(str2);
 
@@ -250,26 +255,26 @@ function getSimilarity(str1, str2) {
 
   // 3. Bigram (雙字切分) 演算法
   const getBigrams = (string) => {
-      const bigrams = [];
-      for (let i = 0; i < string.length - 1; i++) {
-          bigrams.push(string.substring(i, i + 2));
-      }
-      return bigrams;
+    const bigrams = [];
+    for (let i = 0; i < string.length - 1; i++) {
+      bigrams.push(string.substring(i, i + 2));
+    }
+    return bigrams;
   };
 
   const s1Gram = getBigrams(s1);
   const s2Gram = getBigrams(s2);
-  
+
   if (s1Gram.length === 0 || s2Gram.length === 0) return 0;
 
   let intersection = 0;
   // 計算重疊的字組數量
   for (let i = 0; i < s1Gram.length; i++) {
-      const item = s1Gram[i];
-      if (s2Gram.includes(item)) {
-          intersection++;
-          // 避免重複計算同一個 bigram，這裡簡單處理即可，若要嚴謹可移除 s2Gram 中的該元素
-      }
+    const item = s1Gram[i];
+    if (s2Gram.includes(item)) {
+      intersection++;
+      // 避免重複計算同一個 bigram，這裡簡單處理即可，若要嚴謹可移除 s2Gram 中的該元素
+    }
   }
 
   // Dice 公式: (2 * 交集數量) / (集合A長度 + 集合B長度)
