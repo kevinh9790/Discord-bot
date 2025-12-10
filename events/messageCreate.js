@@ -3,6 +3,9 @@ const fs = require("fs");
 const path = require("path");
 const { ChannelType } = require("discord.js");
 
+//引入活躍頻道管理器
+const activeChatManager = require("../utils/activeChatManager.js");
+
 //定義開發進度的前綴
 const DEV_LOG_CONFIG = {
   triggerPrefix: "開發進度",
@@ -19,6 +22,8 @@ module.exports = {
   name: "messageCreate",
   async execute(message) {
     if (message.author.bot) return;
+
+    activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
 
     // 讀取全域設定 (從 ready.js 掛載的)
     const FILTER_CONFIG = message.client.filterConfig || {
@@ -38,7 +43,7 @@ module.exports = {
      const channel = message.channel;
      const parentId = channel.parentId;
 
-    // 1. 檢查是否為目標伺服器
+  // 1. 檢查是否為目標伺服器
     if (FILTER_CONFIG.TARGET_GUILD_ID && message.guild.id !== FILTER_CONFIG.TARGET_GUILD_ID) {
       // Skip
   } 
