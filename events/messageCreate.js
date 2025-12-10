@@ -2,9 +2,6 @@
 const fs = require("fs");
 const path = require("path");
 const { ChannelType } = require("discord.js");
-// 定義要排除的 ID
-const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455", "1440221111228043394"];
-const IGNORED_ROLES = ["1229465574074224720"];
 
 //定義開發進度的前綴
 const DEV_LOG_CONFIG = {
@@ -13,7 +10,7 @@ const DEV_LOG_CONFIG = {
   targetForumId: "1230535598259834950"
 };
 
-// 🌟 新增：快取儲存空間 (放在這裡才能在不同訊息間共用)
+// 快取儲存空間 (放在這裡才能在不同訊息間共用)
 // 格式: Map<UserId, { threads: Array, timestamp: Number }>
 const threadCache = new Map();
 const CACHE_DURATION = 60 * 1000; // 快取有效時間：60秒
@@ -23,33 +20,84 @@ module.exports = {
   async execute(message) {
     if (message.author.bot) return;
 
-    //#region === 📊 統計邏輯 ===
-        /* 判斷條件：
-         1. 不是指令 (沒有 & 開頭)
-         2. 不是排除的分類
-         3. 不是排除的身分組
-         判斷是否為「不想統計」的訊息*/
-        const isCommand = message.content.startsWith("&");
-        const isIgnoredCategory = message.channel.parentId && IGNORED_CATEGORIES.includes(message.channel.parentId);
-        const isIgnoredRole = message.member.roles.cache.some(role => IGNORED_ROLES.includes(role.id));
+    // 讀取全域設定 (從 ready.js 掛載的)
+    const FILTER_CONFIG = message.client.filterConfig || {
+      INCLUDE_CATEGORIES: [],
+      EXCLUDE_CATEGORIES: ["1229094983202504715", "859390147656679455", "1440221111228043394"],
+      EXCLUDE_ROLES: ["1229465574074224720"],
+      TARGET_GUILD_ID: "1447566124924534859"
+    };
 
-    if (!isCommand && !isIgnoredCategory && !isIgnoredRole) {
+    //#region === 📊 統計邏輯 ===
+    /* 判斷條件：
+     1. 不是指令 (沒有 & 開頭)
+     2. 不是排除的分類
+     3. 不是排除的身分組
+     判斷是否為「不想統計」的訊息*/
+     const isCommand = message.content.startsWith("!");
+     const channel = message.channel;
+     const parentId = channel.parentId;
+
+    // 1. 檢查是否為目標伺服器
+    if (FILTER_CONFIG.TARGET_GUILD_ID && message.guild.id !== FILTER_CONFIG.TARGET_GUILD_ID) {
+      // Skip
+  } 
+  // 2. 檢查排除名單
+  else if (
+      (parentId && FILTER_CONFIG.EXCLUDE_CATEGORIES.includes(parentId)) || 
+      message.member.roles.cache.some(role => FILTER_CONFIG.EXCLUDE_ROLES.includes(role.id))
+  ) {
+      // 排除
+  }
+  // 3. 檢查包含名單 (如果有設定的話)
+  else if (
+      FILTER_CONFIG.INCLUDE_CATEGORIES.length > 0 && 
+      (!parentId || !FILTER_CONFIG.INCLUDE_CATEGORIES.includes(parentId))
+  ) {
+      // 不在包含名單內 -> Skip
+  }
+  // 4. 執行統計
+  else if (!isCommand) {
       const stats = message.client.dailyStats;
       if (stats) {
-        const chId = message.channel.id;
+          const chId = message.channel.id;
 
-        // 如果這個頻道還沒被記錄過，先建立物件
-        if (!stats.channels[chId]) {
-          stats.channels[chId] = { msgCount: 0, voiceMs: 0, name: message.channel.name };
-        }
+          // 初始化
+          if (!stats.channels[chId]) {
+              stats.channels[chId] = { 
+                  name: message.channel.name,
+                  msgCount: 0, 
+                    voiceMs: 0, 
+                    msgPoints: 0, 
+                    voicePoints: 0,
+                    maxUsers: 0
+              };
+          }
 
-        stats.channels[chId].msgCount++;
-        //console.log(`[DEBUG] 頻道 ${message.channel.name} 訊息+1`);
+          const chStats = stats.channels[chId];
+
+          // A. 訊息數 +1 (統計用)
+          chStats.msgCount++;
+
+          // B. 積分計算 (排行榜用)
+          // 規則：每則+1, 長文(>20)+2, 附件+3
+          let score = 1;
+          
+          // 長文字檢查
+          if (message.content.length >= 20) {
+              score += 2;
+          }
+
+          // 附件或說明檢查 (Embeds 或 Attachments)
+          // 這裡假設「說明」指的是 Embed 或是複雜內容，通常 user 發的附件在 attachments
+          if (message.attachments.size > 0 || message.embeds.length > 0) {
+              score += 3;
+          }
+
+          chStats.msgPoints += score;
       }
-    } else {
-      //console.log(`🛡️ 訊息未計入統計 (排除名單)：${message.channel.name}`);
-    }
-    //#endregion
+  }
+  //#endregion
 
     //#region 🚀 開發進度自動轉發 (Forum Log)
 
@@ -78,12 +126,10 @@ module.exports = {
         if (splitMatch) {
           gameName = splitMatch[1]; // 第一個捕捉組：遊戲名稱
           logContent = splitMatch[2]; // 第二個捕捉組：剩餘內容
-        } else {
+        } else if (rawContent.length > 0){
           // 如果只有兩個部分（例如：開發進度 遊戲名），沒有內容，但可能有圖片
-          if (rawContent.length > 0) {
             gameName = rawContent.trim(); // 整個當作遊戲名
             logContent = ""; // 內容為空
-          }
         }
 
         // ❌ 錯誤情況 A：格式錯誤（抓不到遊戲名稱）
@@ -108,7 +154,6 @@ module.exports = {
 
         let targetThread = null;
         let maxScore = 0;
-        const THRESHOLD = 0.4; // 相似度門檻
 
         // 先在活躍列表中找找看有沒有「完全命中」或「高度相似」的
         userActiveThreads.forEach(thread => {
@@ -174,7 +219,7 @@ module.exports = {
         // ❌ 錯誤情況 B：找不到對應文章 (或是相似度都太低)
         if (!targetThread) {
           return message.reply({
-            content: `❌ **找不到指定文章！**\n機器人找不到您名下標題包含 **「${gameName}」** 的開發日誌。\n\n💡 **請先前往 <#${DEV_LOG_CONFIG.targetForumId}> 建立一篇標題包含「${gameName}」的貼文後再試一次。**`
+            content: `❌ **找不到指定文章！**\n\n**請先前往 <#${DEV_LOG_CONFIG.targetForumId}> 建立一篇標題包含「${gameName}」的貼文後再試一次。**`
           });
         }
 
@@ -184,29 +229,26 @@ module.exports = {
           files: attachmentFiles
         });
         await message.react("✅");
-        console.log(`✅ [DevLog] 已轉發 [${gameName}] 進度至: ${targetThread.name}`);
 
       } catch (err) {
-        console.error("❌ [DevLog] 轉發失敗:", err);
         await message.reply(`❌ 轉發失敗: ${err.message}`);
       }
 
       return;
     }
     //#endregion
-    
+
     // === 🎯 指令處理邏輯 ===
 
     if (!isCommand) return;
 
     // ✅ 只有管理員可以使用文字指令
     if (!message.member.permissions.has("Administrator")) {
-      return message.reply("❌ 【除錯模式】操作失敗：偵測到您沒有「管理員 (Administrator)」權限。");;
+      return message.reply("❌ 需要管理員權限。");;
     }
 
     const args = message.content.slice(1).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
-
     const commandsPath = path.join(__dirname, "../commands");
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
@@ -217,18 +259,17 @@ module.exports = {
       if (command.name === commandName) {
         commandFound = true;
         try {
-          //console.log(`🚀 正在執行指令：${commandName}`);
           await command.execute(message, args);
         } catch (error) {
           console.error(error);
-          message.reply("執行指令時發生錯誤！");
+          message.reply("執行指令錯誤！");
         }
         break;
       }
     }
 
     if (!commandFound) {
-      message.reply(`⚠️ 【除錯模式】找不到指令：**${commandName}**`);
+      message.reply(`⚠️ 找不到指令：**${commandName}**`);
     }
   },
 };

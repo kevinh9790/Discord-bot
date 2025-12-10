@@ -1,8 +1,4 @@
 ﻿const log = require('../utils/logger');
-const IGNORED_CATEGORIES = ["1229094983202504715", "859390147656679455", "1440221111228043394", "1429360420740661249", "1434802712712577074"];
-
-// 🛠️ 設定除錯頻道 ID
-const DEBUG_CHANNEL_ID = "1232356996779343944";
 
 module.exports = {
   name: 'messageReactionAdd',
@@ -21,52 +17,62 @@ module.exports = {
     }
 
     const message = reaction.message;
+    const stats = client.dailyStats;
+    const FILTER_CONFIG = client.filterConfig;
 
     // 記錄一般訊息
     // await log(client, `🔍 偵測到 ${user.username} 在 <#${message.channel.id}> 對訊息按了 ${reaction.emoji.name}`);
 
-    //#region 📊 統計反應王
-    const isIgnoredCategory = message.channel.parentId && IGNORED_CATEGORIES.includes(message.channel.parentId);
+        //#region 📊 統計邏輯
+    // 檢查頻道過濾 (使用與 ready.js 一致的邏輯)
+    let isTracked = true;
+    if (FILTER_CONFIG) {
+        if (FILTER_CONFIG.TARGET_GUILD_ID && message.guild.id !== FILTER_CONFIG.TARGET_GUILD_ID) isTracked = false;
+        if (message.channel.parentId && FILTER_CONFIG.EXCLUDE_CATEGORIES.includes(message.channel.parentId)) isTracked = false;
+        if (FILTER_CONFIG.INCLUDE_CATEGORIES.length > 0 && (!message.channel.parentId || !FILTER_CONFIG.INCLUDE_CATEGORIES.includes(message.channel.parentId))) isTracked = false;
+    }
 
-    if (!isIgnoredCategory) {
+    if (stats && isTracked) {
+      const chId = message.channel.id;
+      
+      // 1. 初始化頻道數據
+      if (!stats.channels[chId]) {
+        stats.channels[chId] = { 
+            name: message.channel.name, 
+            msgCount: 0, 
+            voiceMs: 0, 
+            msgPoints: 0, 
+            voicePoints: 0,
+            maxUsers: 0
+        };
+      }
 
+      // 2. 增加頻道活躍積分
+      // 規則：有人按讚，頻道積分+1 (不做複雜的去重檢查以節省效能)
+      stats.channels[chId].msgPoints += 1;
+
+      // 3. 反應王 (Most Reacted) 統計
       // 日期檢查：只統計「今天」發送的訊息
       const taipeiTime = { timeZone: "Asia/Taipei" };
       const todayDate = new Date().toLocaleDateString("zh-TW", taipeiTime);
       const msgDate = new Date(message.createdTimestamp).toLocaleDateString("zh-TW", taipeiTime);
 
       if (todayDate === msgDate) {
-        const stats = client.dailyStats;
-        if (stats) {
+          // 計算所有表情符號的總數
           const totalReactions = message.reactions.cache.reduce((acc, r) => acc + r.count, 0);
 
-          // 印出當前分數與霸主分數的比對
-          // await log(client, `🔢 [比對] 此訊息: ${totalReactions} 讚 | 目前霸主: ${stats.mostReacted.count} 讚`);
-
           if (totalReactions > stats.mostReacted.count) {
-            await log(client, `⭐ [反應王更新] 舊紀錄: ${stats.mostReacted.count} -> 新紀錄: ${totalReactions} (頻道: <#${message.channel.id}>)`);
-
+            // 更新紀錄
             stats.mostReacted = {
               count: totalReactions,
               url: message.url,
               content: message.content || "[圖片/附件]",
               author: message.author ? message.author.tag : "未知用戶",
-              authorId: message.author ? message.author.id : null
+              authorId: message.author ? message.author.id : null,
+              channelId: message.channel.id // 用於 Tag 來源
             };
-          } else {
-            // 沒破紀錄也告訴你一聲 (測試完覺得太吵可以註解掉)
-            // await log(client, `📉 [未更新] 數量不足 (${totalReactions} <= ${stats.mostReacted.count})`);
           }
-        } else {
-          await log(client, "⚠️ client.dailyStats 尚未初始化 (請檢查 ready.js)", 'error');
-        }
-      } else {
-        // 🟢 [新增] 如果是舊訊息，印出 Log 告知
-        await log(client, `🕰️ [忽略] 這是舊訊息 (${msgDate})，不列入今日 (${todayDate}) 反應王統計`);
       }
-    } else {
-      // 被排除時正確回報 (原本這裡會報錯)
-      // await log(client, `🛡️ [忽略] 此頻道在排除名單內，不計入統計`);
     }
     //#endregion
 
