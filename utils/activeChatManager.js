@@ -1,8 +1,8 @@
 ﻿// utils/activeChatManager.js
 
 const CONFIG = {
-    targetGuildId: "1447566124924534859",
-    notificationChannelId: "1447566126102872217",
+    targetGuildId: "859390147110633512",
+    notificationChannelId: "859423355626717215",
     ignoredCategories: [],
 
     // rule1: 2人(含)以上 30分鐘內 10則訊息

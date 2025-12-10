@@ -28,9 +28,9 @@ module.exports = {
     // 讀取全域設定 (從 ready.js 掛載的)
     const FILTER_CONFIG = message.client.filterConfig || {
       INCLUDE_CATEGORIES: [],
-      EXCLUDE_CATEGORIES: ["1229094983202504715", "859390147656679455", "1440221111228043394"],
-      EXCLUDE_ROLES: ["1229465574074224720"],
-      TARGET_GUILD_ID: "1447566124924534859"
+      EXCLUDE_CATEGORIES: [],
+      EXCLUDE_ROLES: [],
+      TARGET_GUILD_ID: null
     };
 
     //#region === 📊 統計邏輯 ===
