@@ -8,8 +8,8 @@
         // 讀取設定
         const FILTER_CONFIG = client.filterConfig || {
             INCLUDE_CATEGORIES: [],
-            EXCLUDE_CATEGORIES: ["1229094983202504715", "859390147656679455", "1440221111228043394"],
-            EXCLUDE_ROLES: ["1229465574074224720"],
+            EXCLUDE_CATEGORIES: [],
+            EXCLUDE_ROLES: [],
             TARGET_GUILD_ID: ""
         };
 
