@@ -27,7 +27,7 @@ module.exports = {
         // 基本檢查 log
         if (!message.guild || message.guild.id !== CONFIG.targetGuildId) return;
         if (message.author.bot) return;
-        if (CONFIG.ignoredCategories.includes(channel.parentId)) return;
+        if (CONFIG.ignoredCategories.includes(message.channel.parentId)) return;
         if (message.channel.id === CONFIG.notificationChannelId) return;
 
         checkDailyReset();
