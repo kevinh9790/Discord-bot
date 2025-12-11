@@ -82,6 +82,7 @@ const tasks = [
         name: "每週一提醒",
         enabled: true,
         cronTime: "0 20 * * 1", // 每週一 20:00
+        skipOnFirstDay: true, //1號跳過
         channelGroup: "Monday", // 🟢 設定群組名稱
         content: {
             title: "📝 開發進度分享",
@@ -94,6 +95,7 @@ const tasks = [
         name: "每15天提醒",
         enabled: true,
         cronTime: "0 20 1,15 * *", // 每月1號,15號 20:00 提醒
+        skipOnFirstDay: true, //1號跳過
         channelGroup: "half_monthly", // 🟢 設定群組名稱
         content: {
             title: "📝 開發進度分享",
@@ -135,6 +137,19 @@ module.exports = {
 
             cron.schedule(task.cronTime, async () => {
                 try {
+
+                    const date = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei", day: "numeric" });
+
+                    if (date === 1 && task.skipOnFirstDay === true) {
+                        await sendLog(client, `🗓️ 今天是 1 號，跳過 [${task.name}] 以避免與月報重複。`);
+                        return; 
+                    }
+
+                    if (date === 1 && task.skipOnFirstDay === true) {
+                        await sendLog(client, `🗓️ 今天是 1 號，跳過 [${task.name}] 以避免與月報重複。`);
+                        return;
+                    }
+
                     await sendLog(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
                     
                     const currentChannels = await getScheduledChannels(client, task.channelGroup);
