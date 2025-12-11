@@ -7,11 +7,25 @@ const { ChannelType } = require("discord.js");
 const activeChatManager = require("../utils/activeChatManager.js");
 
 //定義開發進度的前綴
-const DEV_LOG_CONFIG = {
-  triggerPrefix: "開發進度",
-  sourceChannelId: "1447566126102872217",
-  targetForumId: "1447566187339841587"
-};
+// triggerPrefix: 觸發指令 (統一用同一個)
+const TRIGGER_PREFIX = "開發進度";
+
+// 定義頻道對應表： [來源頻道 ID] -> [目標論壇 ID]
+const DEV_LOG_GROUPS = [
+  { 
+    targetId: "1447566187339841587", // 目標論壇 A
+    sourceIds: [
+      "1447566126102872217", // 來源頻道
+      "1448292387922251953", 
+    ]
+  },
+  {
+    targetId: "1448583639930503280", // 目標論壇 B
+    sourceIds: [
+      "1448583752254226474", // 來源頻道 
+    ]
+  }
+];
 
 // 快取儲存空間 (放在這裡才能在不同訊息間共用)
 // 格式: Map<UserId, { threads: Array, timestamp: Number }>
@@ -106,19 +120,22 @@ module.exports = {
 
     //#region 🚀 開發進度自動轉發 (Forum Log)
 
-    if (message.channel.id === DEV_LOG_CONFIG.sourceChannelId && message.content.startsWith(DEV_LOG_CONFIG.triggerPrefix)) {
+    const currentGroup = DEV_LOG_GROUPS.find(group => group.sourceIds.includes(message.channel.id));
 
-      const forumChannel = message.guild.channels.cache.get(DEV_LOG_CONFIG.targetForumId);
+    if (currentGroup && message.content.startsWith(TRIGGER_PREFIX)) {
+
+      const targetForumId = currentGroup.targetId;
+      const forumChannel = message.guild.channels.cache.get(targetForumId);
 
       if (!forumChannel || forumChannel.type !== ChannelType.GuildForum) {
-        console.error(`❌ [DevLog] 找不到目標論壇 (${DEV_LOG_CONFIG.targetForumId})`);
+        console.error(`❌ [DevLog] 找不到目標論壇 (${targetForumId})`);
         return;
       }
 
       try {
         // 1. 解析內容：分離 [遊戲名稱] 與 [進度內容]
         // 移除前綴並去除前後空白
-        const rawContent = message.content.slice(DEV_LOG_CONFIG.triggerPrefix.length).trim();
+        const rawContent = message.content.slice(TRIGGER_PREFIX.length).trim();
 
         // 使用正規表達式抓取第一個空格前的字當作「遊戲名稱」
         // 格式假設：開發進度 遊戲名稱 內容...
@@ -141,7 +158,7 @@ module.exports = {
         if (!gameName) {
           // 回覆提示格式 (一般訊息無法發送 ephemeral 隱藏訊息，只能用 reply)
           return message.reply({
-            content: `❌ **格式錯誤！**\n請依照格式輸入：\`${DEV_LOG_CONFIG.triggerPrefix} [遊戲名稱] [進度內容]\`\n範例：\`${DEV_LOG_CONFIG.triggerPrefix} 勇者鬥惡龍 今天畫了主角圖\``
+            content: `❌ **格式錯誤！**\n請依照格式輸入：\`${TRIGGER_PREFIX} [遊戲名稱] [進度內容]\`\n範例：\`${TRIGGER_PREFIX} 勇者鬥惡龍 今天畫了主角圖\``
           });
         }
 
@@ -224,7 +241,7 @@ module.exports = {
         // ❌ 錯誤情況 B：找不到對應文章 (或是相似度都太低)
         if (!targetThread) {
           return message.reply({
-            content: `❌ **找不到指定文章！**\n\n**請先前往 <#${DEV_LOG_CONFIG.targetForumId}> 建立一篇標題包含「${gameName}」的貼文後再試一次。**`
+            content: `❌ **找不到指定文章！**\n\n**請先前往 <#${targetForumId}> 建立一篇標題包含「${gameName}」的貼文後再試一次。**`
           });
         }
 
