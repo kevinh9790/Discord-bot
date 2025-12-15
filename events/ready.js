@@ -206,17 +206,17 @@ module.exports = {
 
                     // 💬 訊息活躍頻道 (左欄)
                     const msgFieldVal = msgRank.length > 0
-                        ? msgRank.map((c, i) => `**${i + 1}.** <#${c.id}>: ${Math.round(c.msgPoints)} 點 🔥`).join('\n')
+                        ? msgRank.map((c, i) => `**${i + 1}.** <#${c.id}>: ${Math.round(c.msgPoints)} 點`).join('\n')
                         : "無數據";
 
                     // 🗣️ 語音活躍頻道 (右欄)
                     const voiceFieldVal = voiceRank.length > 0
-                        ? voiceRank.map((c, i) => `**${i + 1}.** <#${c.id}>: ${Math.round(c.voicePoints)} 點 🔥`).join('\n')
+                        ? voiceRank.map((c, i) => `**${i + 1}.** <#${c.id}>: ${Math.round(c.voicePoints)} 點`).join('\n')
                         : "無數據";
 
                     embed.addFields(
-                        { name: '💬 訊息活躍頻道', value: msgFieldVal, inline: true },
-                        { name: '🗣️ 語音活躍頻道', value: voiceFieldVal, inline: true }
+                        { name: '💬 訊息頻道活躍度', value: msgFieldVal, inline: true },
+                        { name: '🗣️ 語音頻道活躍度', value: voiceFieldVal, inline: true }
                     );
 
                     await leaderboardChannel.send({ embeds: [embed] });
