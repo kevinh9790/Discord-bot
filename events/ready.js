@@ -206,7 +206,7 @@ module.exports = {
 
                     // 💬 訊息活躍頻道 (左欄)
                     const msgFieldVal = msgRank.length > 0
-                        ? msgRank.map((c, i) => `**${i + 1}.** <#${c.id}>: ${Math.round(c.msgPoints)} 點`).join('\n')
+                        ? msgRank.map((c, i) => `**${i + 1}.** <#${c.id}>: ${Math.round(c.msgPoints * 10)} 點`).join('\n')
                         : "無數據";
 
                     // 🗣️ 語音活躍頻道 (右欄)
