@@ -5,10 +5,10 @@ const CONFIG = {
     notificationChannelId: "859423355626717215",
     ignoredCategories: [],
 
-    // rule1: 2人(含)以上 30分鐘內 10則訊息
-    rule1: { minUsers: 2, minMsgs: 10, duration: 30 * 60 * 1000 },
-    // rule2: 3人(含)以上 45分鐘內 15則訊息
-    rule2: { minUsers: 3, minMsgs: 15, duration: 45 * 60 * 1000 },
+    // rule1: 3人(含)以上 60分鐘內 10則訊息
+    rule1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000 },
+    // rule2: 4人(含)以上 45分鐘內 8則訊息
+    rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000 },
 
     // 冷卻 6 小時
     cooldownTime: 6 * 60 * 60 * 1000
