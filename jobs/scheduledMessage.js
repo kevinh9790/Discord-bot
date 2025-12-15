@@ -82,7 +82,7 @@ const tasks = [
         name: "每週一提醒",
         enabled: true,
         cronTime: "0 20 * * 1", // 每週一 20:00
-        skipOnFirstDay: true, //1號跳過
+        skipDates: [1, 15], //1號 15號 跳過
         channelGroup: "Monday", // 🟢 設定群組名稱
         content: {
             title: "📝 開發進度分享",
@@ -95,7 +95,7 @@ const tasks = [
         name: "每15天提醒",
         enabled: true,
         cronTime: "0 20 1,15 * *", // 每月1號,15號 20:00 提醒
-        skipOnFirstDay: true, //1號跳過
+        skipDates: [1], //1號跳過
         channelGroup: "half_monthly", // 🟢 設定群組名稱
         content: {
             title: "📝 開發進度分享",
@@ -120,7 +120,7 @@ const tasks = [
         name: "每週一提醒",
         enabled: true,
         cronTime: "0 20 * * 1", // 每週一 20:00
-        skipOnFirstDay: true, //1號跳過
+        skipDates: [1, 15], //1號 15號 跳過
         channelGroup: "18Monday", // 🟢 設定群組名稱
         content: {
             title: "📝 開發進度分享",
@@ -133,7 +133,7 @@ const tasks = [
         name: "每15天提醒",
         enabled: true,
         cronTime: "0 20 1,15 * *", // 每月1號,15號 20:00 提醒
-        skipOnFirstDay: true, //1號跳過
+        skipDates: [1], //1號跳過
         channelGroup: "18half_monthly", // 🟢 設定群組名稱
         content: {
             title: "📝 開發進度分享",
@@ -144,16 +144,15 @@ const tasks = [
     // 範例任務：五分鐘測試
     {
         name: "五分鐘測試用",
-        enabled: false,
+        enabled: true,
         cronTime: "0 */5 * * * *", // ⚠️ 注意：每5分鐘的寫法是 0 */5 * * * * (6位) 或 */5 * * * * (5位)
-        channelGroup: "forTestFiveMins", // 🟢 設定群組名稱
+        channelGroup: "TestFiveMins", // 🟢 設定群組名稱
         content: {
             title: "📝 每五分鐘的提醒測試",
             description: "各位冒險者辛苦了！這個月有做甚麼進度內容呢？\n請到<#1440593941073231932>和大家分享！",
             color: 0x00FF00 // 綠色
         }
     }
-    // 你可以在這裡繼續複製新增更多任務...
 ];
 
 module.exports = {
@@ -176,16 +175,13 @@ module.exports = {
             cron.schedule(task.cronTime, async () => {
                 try {
 
-                    const date = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei", day: "numeric" });
+                    //const dateStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei", day: "numeric" });
+                    //const currentDay = parseInt(dateStr, 10); // 轉成數字
+                    const currentDay = 15;
 
-                    if (date === 1 && task.skipOnFirstDay === true) {
-                        await sendLog(client, `🗓️ 今天是 1 號，跳過 [${task.name}] 以避免與月報重複。`);
+                    if (task.skipDates && task.skipDates.includes(currentDay)) {
+                        await sendLog(client, `🗓️ 今天是 ${currentDay} 號，跳過 [${task.name}] 以避免與月報/半月報重複。`);
                         return; 
-                    }
-
-                    if (date === 1 && task.skipOnFirstDay === true) {
-                        await sendLog(client, `🗓️ 今天是 1 號，跳過 [${task.name}] 以避免與月報重複。`);
-                        return;
                     }
 
                     await sendLog(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
@@ -222,7 +218,6 @@ module.exports = {
                             }
 
                             await channel.send(payload);
-                            await sendLog(client, `✅ 已發送至 [${channel.name}] ${mentionUserId ? `(標記了 ${mentionUserId})` : ''}`);
 
                         } catch (error) {
                             await sendLog(client, `❌ 發送失敗 (${channelId}): ${error.message}`, 'error');
