@@ -119,7 +119,7 @@ module.exports = {
                     if (!client.dailyStats.channels[chId]) return;
 
                     const duration = now - state.lastTime;
-                    if (duration > 0) {
+                    if (duration > 0 && state.userCount > 0) {
                         // 計算積分公式
                         // 基礎分 0.05/s (有人)
                         // 直播分 0.1/s (每人)
