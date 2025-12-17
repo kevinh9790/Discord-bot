@@ -6,9 +6,9 @@ const CONFIG = {
     ignoredCategories: [],
 
     // rule1: 3人(含)以上 60分鐘內 10則訊息
-    rule1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 4 },
+    rule1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 2 },
     // rule2: 4人(含)以上 45分鐘內 8則訊息
-    rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 3 },
+    rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
 
     // 冷卻 6 小時
     cooldownTime: 6 * 60 * 60 * 1000
