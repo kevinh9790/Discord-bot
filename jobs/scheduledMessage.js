@@ -141,6 +141,19 @@ const tasks = [
             color: 0x00FF00 // 綠色
         }
     },
+    // 範例任務 7：每月第二個禮拜六提醒
+    {
+        name: "每月第二個禮拜六提醒",
+        enabled: true,
+        cronTime: "0 20 8-14 * 6", // 每月第二個禮拜六 20:00 提醒
+        skipDates: [1], //1號跳過
+        channelGroup: "2ndSat", // 🟢 設定群組名稱
+        content: {
+            title: "📝 開發進度分享",
+            description: "冒險者辛苦了！有做甚麼進度內容呢？\n請到<#1440593941073231932>和大家分享！",
+            color: 0x00FF00 // 綠色
+        }
+    },
     // 範例任務：五分鐘測試
     {
         name: "五分鐘測試用",
