@@ -1,5 +1,9 @@
 // utils/activeChatManager.js
+const fs = require('fs');
+const path = require('path');
 const config = require('../config/config.js');
+
+const STATE_FILE_PATH = path.join(__dirname, '../config/activeChatState.json');
 
 const CONFIG = {
     targetGuildId: config.TARGET_GUILD_ID,
@@ -14,9 +18,48 @@ const CONFIG = {
 // 用於判斷「閒置重置」
 const MAX_DURATION = Math.max(CONFIG.rule1.duration, CONFIG.rule2.duration);
 
-const channelMessages = new Map();
-const channelCooldowns = new Map();
+// State Data
+let channelMessages = new Map();
+let channelCooldowns = new Map();
 let lastResetDate = new Date().toDateString();
+
+// --- Persistence Helpers ---
+function loadState() {
+    if (!fs.existsSync(STATE_FILE_PATH)) return;
+    try {
+        const raw = fs.readFileSync(STATE_FILE_PATH, 'utf8');
+        const data = JSON.parse(raw);
+        
+        if (data.messages) {
+            channelMessages = new Map(Object.entries(data.messages));
+        }
+        if (data.cooldowns) {
+            channelCooldowns = new Map(Object.entries(data.cooldowns));
+        }
+        if (data.lastResetDate) {
+            lastResetDate = data.lastResetDate;
+        }
+        // console.log(`[ActiveChat] State loaded. Tracking ${channelMessages.size} channels.`);
+    } catch (err) {
+        console.error('[ActiveChat] Failed to load state:', err);
+    }
+}
+
+function saveState() {
+    try {
+        const data = {
+            messages: Object.fromEntries(channelMessages),
+            cooldowns: Object.fromEntries(channelCooldowns),
+            lastResetDate: lastResetDate
+        };
+        fs.writeFileSync(STATE_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
+    } catch (err) {
+        console.error('[ActiveChat] Failed to save state:', err);
+    }
+}
+
+// Load state on startup
+loadState();
 
 module.exports = {
     async handleMessage(message) {
@@ -41,6 +84,7 @@ module.exports = {
             } else {
                 // 冷卻結束，移除標記
                 channelCooldowns.delete(channelId);
+                saveState(); // Update state
             }
         }
 
@@ -62,6 +106,9 @@ module.exports = {
         // 再次過濾：只保留時間範圍內的訊息 (Double Check，確保滑動視窗準確)
         const validMsgs = msgs.filter(m => now - m.timestamp < MAX_DURATION);
         channelMessages.set(channelId, validMsgs);
+        
+        // Save state after updating messages
+        saveState();
 
         // Debug 訊息 (測試完可註解)
          const uniqueUsers = new Set(validMsgs.map(m => m.authorId)).size;
@@ -74,6 +121,7 @@ module.exports = {
             // 通知發送成功後，馬上清空該頻道的累積訊息
             // 這樣下次必須從 0 開始累積，不會因為冷卻結束就馬上再次觸發
             channelMessages.set(channelId, []);
+            saveState(); // Update state
              console.log(`[ActiveChat] 已觸發通知，清空 ${message.channel.name} 的計數器`);
         }
     }
@@ -118,6 +166,7 @@ function checkDailyReset() {
         channelCooldowns.clear();
         // 每日重置時，建議也可以順便清空所有累積訊息，避免隔日第一則訊息就觸發舊的
         channelMessages.clear();
+        saveState(); // Save after reset
     }
 }
 
@@ -127,6 +176,7 @@ async function sendNotification(guild, activeChannel) {
         if (!notifyChannel) return console.log("⚠️ 活躍通知失敗：找不到通知頻道 ID");
 
         channelCooldowns.set(activeChannel.id, Date.now());
+        saveState(); // Save cooldown
 
         await notifyChannel.send({
             content: `<#${activeChannel.id}> 現在討論得很熱烈 🔥，趕快去看看吧！`
