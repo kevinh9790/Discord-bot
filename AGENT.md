@@ -56,5 +56,10 @@ This is a **Node.js Discord Bot** project, likely named "Game Night Castle Bot".
 *   `commands/events.js`: Example of event fetching logic.
 * `utils/`: Helper functions.
 
+## Improvement TODOs
+- [x] **Refactor `activeChatManager.js` Config:** Move hardcoded settings (Guild ID, Channel ID, rules) to `config/config.js`.
+- [ ] **Refactor `activeChatManager.js` State:** Implement basic JSON file persistence for active chat state to survive restarts.
+- [ ] **Refactor `index.js` Config:** Move the hardcoded PING URL to `.env` and `config/config.js`.
+
 
 

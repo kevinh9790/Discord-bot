@@ -36,4 +36,15 @@ module.exports = {
   ],
 
   TRIGGER_PREFIX: "開發進度",
+
+  // Active Chat Manager
+  ACTIVE_CHAT: {
+    IGNORED_CATEGORIES: [],
+    // rule1: 3人(含)以上 60分鐘內 10則訊息
+    rule1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 2 },
+    // rule2: 4人(含)以上 45分鐘內 8則訊息
+    rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
+    // 冷卻 24 小時
+    cooldownTime: 24 * 60 * 60 * 1000
+  }
 };
