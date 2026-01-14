@@ -1,7 +1,9 @@
-﻿// utils/logger.js
+﻿const config = require('../config/config.js');
+
+// utils/logger.js
 module.exports = async (client, msg) => {
     console.log(msg); // terminal
-    const logChannelId = "1232356996779343944";
+    const logChannelId = config.CHANNELS.DEBUG_LOG;
     if (!logChannelId) return;
 
     try {

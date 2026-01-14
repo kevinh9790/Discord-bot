@@ -2,39 +2,17 @@
 const path = require('path');
 const cron = require('node-cron');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-
-// ==========================================
-// ⚙️ 設定區域
-// ==========================================
-// 1. 頻道與分類過濾設定
-const FILTER_CONFIG = {
-    // 若填入 ID，則「只會」統計這些分類下的頻道；若留空 [] 則統計全部
-    INCLUDE_CATEGORIES: [],
-    // 排除的分類 ID (優先權高於 INCLUDE)
-    EXCLUDE_CATEGORIES: ["1229094983202504715", "859390147656679455", "1440221111228043394", "1429360420740661249", "1434802712712577074", "1230537650012819500"],
-    // 排除的身分組
-    EXCLUDE_ROLES: ["1229465574074224720"],
-    // 指定伺服器 ID (留空則不限制，若只想抓特定伺服器請填入 ID)
-    TARGET_GUILD_ID: "859390147110633512"
-};
-
-// 2. 頻道 ID 設定
-const CHANNELS = {
-    DEBUG_LOG: "1232356996779343944", // 除錯/Log 用
-    STATS_LOG: "1450519890904617001",  // 統計數據發送處 (Log 頻道)
-    LEADERBOARD: "859423355626717215" // 活躍排行榜發送處 (主頻道，請自行修改 ID)
-};
-// ==========================================
+const config = require('../config/config.js');
 
 // 輔助函數：發送 Log 到 Discord
 async function sendLog(client, message, type = 'info') {
     if (type === 'error') console.error(message);
     else console.log(message);
 
-    if (!CHANNELS.DEBUG_LOG) return;
+    if (!config.CHANNELS.DEBUG_LOG) return;
 
     try {
-        const channel = await client.channels.fetch(CHANNELS.DEBUG_LOG).catch(() => null);
+        const channel = await client.channels.fetch(config.CHANNELS.DEBUG_LOG).catch(() => null);
         if (channel && channel.isTextBased()) {
             const prefix = type === 'error' ? '❌ [錯誤]' : '📝 [Log]';
             const safeMessage = message.length > 1900 ? message.substring(0, 1900) + '...' : message;
@@ -61,12 +39,13 @@ module.exports = {
         console.log(`🛌 醒來於 ${new Date().toLocaleTimeString()}`);
 
         // 將設定掛載到 client 以便其他檔案讀取
-        client.filterConfig = FILTER_CONFIG;
+        client.filterConfig = config.FILTERS;
+        client.filterConfig.TARGET_GUILD_ID = config.TARGET_GUILD_ID;
 
         //#region 設定邀請連結
         client.inviteUses = new Map();
         for (const [guildId, guild] of client.guilds.cache) {
-            if (FILTER_CONFIG.TARGET_GUILD_ID && guildId !== FILTER_CONFIG.TARGET_GUILD_ID) continue;
+            if (config.TARGET_GUILD_ID && guildId !== config.TARGET_GUILD_ID) continue;
             try {
                 const invites = await guild.invites.fetch();
                 client.inviteUses.set(guildId, new Map(invites.map(inv => [inv.code, inv.uses])));
@@ -102,8 +81,8 @@ module.exports = {
                 await sendLog(client, '📊 開始自動結算每日數據...');
 
                 // 1. 抓取要發送的頻道
-                const statsLogChannel = await client.channels.fetch(CHANNELS.STATS_LOG).catch(() => null);
-                const leaderboardChannel = await client.channels.fetch(CHANNELS.LEADERBOARD).catch(() => null);
+                const statsLogChannel = await client.channels.fetch(config.CHANNELS.STATS_LOG).catch(() => null);
+                const leaderboardChannel = await client.channels.fetch(config.CHANNELS.LEADERBOARD).catch(() => null);
 
                 // 2. 確保數據存在
                 if (!client.dailyStats) {
