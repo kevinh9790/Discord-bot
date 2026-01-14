@@ -2,7 +2,7 @@
 require("dotenv").config();
 
 const express = require("express");
-const { Client, GatewayIntentBits, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
@@ -34,8 +34,25 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-// 🔹 初始化邀請快取（全域變數）
+// 🔹 初始化快取與集合
 client.inviteUses = new Map();
+client.commands = new Collection();
+
+// 📂 載入指令模組
+const commandsPath = path.join(__dirname, "commands");
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('name' in command && 'execute' in command) {
+            client.commands.set(command.name, command);
+        } else {
+            console.warn(`[WARNING] The command at ${filePath} is missing a required "name" or "execute" property.`);
+        }
+    }
+    console.log(`✅ 已載入 ${client.commands.size} 個指令`);
+}
 
 // 📂 載入事件模組
 const eventsPath = path.join(__dirname, "events");
