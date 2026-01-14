@@ -2,14 +2,9 @@
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const config = require('../config/config.js');
 const log = require('../utils/logger');
 
 const channelsFilePath = path.join(__dirname, '../config/scheduledChannels.json');
-
-// 🛠️ 設定除錯頻道 ID (請替換為您的測試頻道 ID)
-// 如果留空或無效，則只會印在終端機
-const DEBUG_CHANNEL_ID = config.CHANNELS.DEBUG_LOG;
 
 // 輔助函數：取得台北時間的詳細資訊
 function getTaipeiInfo() {
@@ -22,8 +17,7 @@ function getTaipeiInfo() {
 
     return {
         day: day,
-        dayOfWeek: dayOfWeek,
-        fullString: now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+        dayOfWeek: dayOfWeek
     };
 }
 

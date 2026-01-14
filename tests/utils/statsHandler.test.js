@@ -33,7 +33,7 @@ describe('Stats Handler', () => {
             member: {
                 roles: {
                     cache: {
-                        some: jest.fn(callback => {
+                        some: jest.fn(_callback => {
                            // simple mock implementation of collection.some
                            return false; 
                         })

@@ -21,6 +21,6 @@ module.exports = {
 
         await message.channel.send({ embeds: [embed], components: [row] });
         // 刪除指令訊息，保持版面乾淨
-        try { await message.delete(); } catch (e) {}
+        try { await message.delete(); } catch { /* ignore */ }
     },
 };

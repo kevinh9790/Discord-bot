@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 
 //未來用於自動推播
 /*

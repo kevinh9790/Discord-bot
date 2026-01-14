@@ -1,5 +1,3 @@
-const fs = require("fs");
-const path = require("path");
 const activeChatManager = require("../utils/activeChatManager.js");
 const statsHandler = require("../utils/statsHandler.js");
 const devLogHandler = require("../utils/devLogHandler.js");
