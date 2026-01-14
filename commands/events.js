@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 const getEventLocation = (event, guild) => {
     if (event.entityType === 3) {
       // 線下實體地點
@@ -42,10 +43,9 @@ const getEventLocation = (event, guild) => {
           return message.channel.send("📭 目前沒有任何已排定的活動。");
         }
   
-        const lines = ["📅 **近期活動清單：**"];
-        for (const [id, event] of events) {
-          const time = formatDateTime(event.scheduledStartTimestamp);
-          const location = getEventLocation(event, message.guild);
+              const lines = ["📅 **近期活動清單：**"];
+              for (const [, event] of events) {
+                const time = formatDateTime(event.scheduledStartTimestamp);          const location = getEventLocation(event, message.guild);
           const description = event.description?.trim() || "（無活動描述）";
   
           lines.push(`## ${event.name}`);

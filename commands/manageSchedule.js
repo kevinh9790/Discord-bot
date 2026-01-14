@@ -11,7 +11,7 @@ function getAllData() {
         // 如果是舊版陣列格式，強制轉型為物件，避免報錯
         if (Array.isArray(data)) return {}; 
         return data;
-    } catch (e) { return {}; }
+    } catch { return {}; }
 }
 
 function saveData(data) {

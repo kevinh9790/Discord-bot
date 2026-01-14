@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "eslint": "^9.38.0",
+    "globals": "^17.0.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.9"
   }
