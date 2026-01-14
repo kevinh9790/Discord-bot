@@ -2,29 +2,17 @@
 const fs = require("fs");
 const path = require("path");
 const { ChannelType } = require("discord.js");
+const config = require("../config/config.js");
 
 //引入活躍頻道管理器
 const activeChatManager = require("../utils/activeChatManager.js");
 
 //定義開發進度的前綴
 // triggerPrefix: 觸發指令 (統一用同一個)
-const TRIGGER_PREFIX = "開發進度";
+const TRIGGER_PREFIX = config.TRIGGER_PREFIX;
 
 // 定義頻道對應表： [來源頻道 ID] -> [目標論壇 ID]
-const DEV_LOG_GROUPS = [
-  { 
-    targetId: "1230535598259834950", // 目標論壇 A
-    sourceIds: [
-      "1440593941073231932", // 來源頻道 
-    ]
-  },
-  {
-    targetId: "1230535700525486110", // 目標論壇 B
-    sourceIds: [
-      "1442811186528911512", // 來源頻道
-    ]
-  }
-];
+const DEV_LOG_GROUPS = config.DEV_LOG_GROUPS;
 
 // 快取儲存空間 (放在這裡才能在不同訊息間共用)
 // 格式: Map<UserId, { threads: Array, timestamp: Number }>
@@ -38,13 +26,10 @@ module.exports = {
 
     activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
 
-    // 讀取全域設定 (從 ready.js 掛載的)
-    const FILTER_CONFIG = message.client.filterConfig || {
-      INCLUDE_CATEGORIES: [],
-      EXCLUDE_CATEGORIES: [],
-      EXCLUDE_ROLES: [],
-      TARGET_GUILD_ID: null
-    };
+    // 讀取全域設定
+    const FILTER_CONFIG = config.FILTERS;
+    // 補上 TARGET_GUILD_ID，因為它在 config 是分開的，但這裡的邏輯原本是把它包在 FILTER_CONFIG 裡
+    const TARGET_GUILD_ID = config.TARGET_GUILD_ID;
 
     //#region === 📊 統計邏輯 ===
     /* 判斷條件：
@@ -57,7 +42,7 @@ module.exports = {
      const parentId = channel.parentId;
 
   // 1. 檢查是否為目標伺服器
-    if (FILTER_CONFIG.TARGET_GUILD_ID && message.guild.id !== FILTER_CONFIG.TARGET_GUILD_ID) {
+    if (TARGET_GUILD_ID && message.guild.id !== TARGET_GUILD_ID) {
       // Skip
   } 
   // 2. 檢查排除名單

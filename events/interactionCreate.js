@@ -11,9 +11,10 @@
     EmbedBuilder,
     AttachmentBuilder
 } = require('discord.js');
+const config = require('../config/config.js');
 
-const SUGGESTION_CHANNEL_ID = "1441340015299792988"; 
-const TICKET_LOG_CHANNEL_ID = "1443055216655339595";
+const SUGGESTION_CHANNEL_ID = config.CHANNELS.SUGGESTION; 
+const TICKET_LOG_CHANNEL_ID = config.CHANNELS.TICKET_LOG;
 
 module.exports = {
     name: Events.InteractionCreate,

@@ -2,12 +2,13 @@
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const config = require('../config/config.js');
 
 const channelsFilePath = path.join(__dirname, '../config/scheduledChannels.json');
 
 // 🛠️ 設定除錯頻道 ID (請替換為您的測試頻道 ID)
 // 如果留空或無效，則只會印在終端機
-const DEBUG_CHANNEL_ID = "1232356996779343944";
+const DEBUG_CHANNEL_ID = config.CHANNELS.DEBUG_LOG;
 
 // 輔助函數：取得台北時間的詳細資訊
 function getTaipeiInfo() {
