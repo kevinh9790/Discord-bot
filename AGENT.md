@@ -61,5 +61,5 @@ This is a **Node.js Discord Bot** project, likely named "Game Night Castle Bot".
 - [x] **Modularize Daily Stats:** Move the massive stats cron job from `events/ready.js` into a dedicated file in the `jobs/` directory.
 - [x] **Centralize Configuration:** Consolidate hardcoded IDs from `ready.js`, `interactionCreate.js`, and `messageCreate.js` into a central `config/config.js`.
 - [x] **Refactor `messageCreate.js`:** Extract the Dev Log forwarding and statistics tracking logic into separate utility modules.
-- [ ] **Unify Logging:** Standardize logging across the codebase by utilizing a shared, robust `utils/logger.js`.
+- [x] **Unify Logging:** Standardize logging across the codebase by utilizing a shared, robust `utils/logger.js`.
 

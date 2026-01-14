@@ -3,6 +3,7 @@ const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/config.js');
+const log = require('../utils/logger');
 
 const channelsFilePath = path.join(__dirname, '../config/scheduledChannels.json');
 
@@ -26,26 +27,6 @@ function getTaipeiInfo() {
     };
 }
 
-// 輔助函數：發送 Log 到 Discord
-async function sendLog(client, message, type = 'info') {
-    if (type === 'error') console.error(message);
-    console.log(message); // 保持終端機也有 Log
-
-    if (!DEBUG_CHANNEL_ID) return;
-
-    try {
-        const channel = await client.channels.fetch(DEBUG_CHANNEL_ID).catch(() => null);
-        if (channel && channel.isTextBased()) {
-            const prefix = type === 'error' ? '❌ [錯誤]' : '📝 [Log]';
-            // 避免訊息過長
-            const safeMessage = message.length > 1900 ? message.substring(0, 1900) + '...' : message;
-            await channel.send(`${prefix} ${safeMessage}`);
-        }
-    } catch (err) {
-        console.error('無法發送 Log 到 Discord:', err);
-    }
-}
-
 // 輔助函數：讀取指定群組的頻道列表
 async function getScheduledChannels(client, groupName) {
     if (!fs.existsSync(channelsFilePath)) return [];
@@ -67,7 +48,7 @@ async function getScheduledChannels(client, groupName) {
         });
 
     } catch (err) {
-        await sendLog(client, `❌ [Debug] 讀取設定檔失敗: ${err.message}`, 'error');
+        await log(client, `❌ [Debug] 讀取設定檔失敗: ${err.message}`, 'error');
         return [];
     }
 }
@@ -186,7 +167,7 @@ const tasks = [
 module.exports = {
     name: 'scheduledMessage',
     execute(client) {
-        sendLog(client, '⏰ 載入定時發送任務...');
+        log(client, '⏰ 載入定時發送任務...');
 
         tasks.forEach(task => {
             // 🟢 檢查開關：如果沒啟用，直接跳過
@@ -196,7 +177,7 @@ module.exports = {
             }
 
             if (!cron.validate(task.cronTime)) {
-                sendLog(client, `❌ 任務 [${task.name}] 的時間設定錯誤: ${task.cronTime}`, 'error');
+                log(client, `❌ 任務 [${task.name}] 的時間設定錯誤: ${task.cronTime}`, 'error');
                 return;
             }
 
@@ -205,7 +186,7 @@ module.exports = {
                     const { day, dayOfWeek, fullString } = getTaipeiInfo();
 
                     if (task.skipDates && task.skipDates.includes(day)) {
-                        await sendLog(client, `🗓️ [${task.name}] 今天是 ${day} 號，觸發跳過機制。`);
+                        await log(client, `🗓️ [${task.name}] 今天是 ${day} 號，觸發跳過機制。`);
                         return;
                     }
 
@@ -213,7 +194,7 @@ module.exports = {
                         return; // 雖然日期符合 8-14，但今天不是禮拜六，所以不執行
                     }
 
-                    await sendLog(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
+                    await log(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
 
                     const currentChannels = await getScheduledChannels(client, task.channelGroup);
 
@@ -227,7 +208,7 @@ module.exports = {
                             const channel = await client.channels.fetch(channelId).catch(() => null);
 
                             if (!channel || !channel.isTextBased()) {
-                                await sendLog(client, `⚠️ 無效頻道: ${channelId}`, 'info');
+                                await log(client, `⚠️ 無效頻道: ${channelId}`, 'info');
                                 continue;
                             }
 
@@ -252,7 +233,7 @@ module.exports = {
                             await new Promise(resolve => setTimeout(resolve, 500));
 
                         } catch (error) {
-                            await sendLog(client, `❌ 發送失敗 (${channelId}): ${error.message}`, 'error');
+                            await log(client, `❌ 發送失敗 (${channelId}): ${error.message}`, 'error');
                         }
                     }
                 } catch (fatalError) {
@@ -263,7 +244,7 @@ module.exports = {
                 timezone: "Asia/Taipei"
             });
 
-            sendLog(client, `✅ 已排程: ${task.name} -> 群組 [${task.channelGroup}]`);
+            log(client, `✅ 已排程: ${task.name} -> 群組 [${task.channelGroup}]`);
         });
     }
 };
