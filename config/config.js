@@ -35,6 +35,7 @@ module.exports = {
       }
   ],
 
+  PING_URL: process.env.PING_URL || "https://discord-bot-production-8a80.up.railway.app/",
   TRIGGER_PREFIX: "開發進度",
 
   // Active Chat Manager
