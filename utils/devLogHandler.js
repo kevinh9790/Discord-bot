@@ -97,10 +97,7 @@ module.exports = {
             // ❌ 錯誤情況 A：格式錯誤（抓不到遊戲名稱）
             if (!gameName) {
                 await message.reply({
-                    content: `❌ **格式錯誤！**\n請依照格式輸入：\
-`${TRIGGER_PREFIX} [遊戲名稱] [進度內容]
-範例：\
-`${TRIGGER_PREFIX} 勇者鬥惡龍 今天畫了主角圖`
+                    content: `❌ **格式錯誤！**\n請依照格式輸入：\`${TRIGGER_PREFIX} [遊戲名稱] [進度內容]\`\n範例：\`${TRIGGER_PREFIX} 勇者鬥惡龍 今天畫了主角圖\``
                 });
                 return true;
             }

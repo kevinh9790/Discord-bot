@@ -56,10 +56,5 @@ This is a **Node.js Discord Bot** project, likely named "Game Night Castle Bot".
 *   `commands/events.js`: Example of event fetching logic.
 * `utils/`: Helper functions.
 
-## High Priority TODOs
-- [x] **Optimize Command Loading:** Load commands into a `client.commands` Collection during startup instead of reading from disk on every message.
-- [x] **Modularize Daily Stats:** Move the massive stats cron job from `events/ready.js` into a dedicated file in the `jobs/` directory.
-- [x] **Centralize Configuration:** Consolidate hardcoded IDs from `ready.js`, `interactionCreate.js`, and `messageCreate.js` into a central `config/config.js`.
-- [x] **Refactor `messageCreate.js`:** Extract the Dev Log forwarding and statistics tracking logic into separate utility modules.
-- [x] **Unify Logging:** Standardize logging across the codebase by utilizing a shared, robust `utils/logger.js`.
+
 
