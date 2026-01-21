@@ -10,8 +10,8 @@ const CONFIG = {
     // rule2: 4人(含)以上 45分鐘內 8則訊息
     rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
 
-    // 冷卻 6 小時
-    cooldownTime: 6 * 60 * 60 * 1000
+    // 冷卻 24 小時
+    cooldownTime: 24 * 60 * 60 * 1000
 };
 
 // 計算最長需要的時間區間 (取兩條規則中時間較長的那個)
