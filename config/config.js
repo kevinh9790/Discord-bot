@@ -47,5 +47,42 @@ module.exports = {
     rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
     // 冷卻 24 小時
     cooldownTime: 24 * 60 * 60 * 1000
+  },
+
+  // LLM Summary Configuration
+  LLM_SUMMARY: {
+    enabled: process.env.LLM_SUMMARY_ENABLED === 'true',
+    provider: process.env.LLM_PROVIDER || 'gemini',
+    apiKeys: {
+      gemini: process.env.GEMINI_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+      claude: process.env.ANTHROPIC_API_KEY,
+    },
+    models: {
+      relevanceCheck: 'gemini-1.5-flash',  // Fast, cheap model
+      fullSummary: 'gemini-1.5-pro',       // High quality model
+    },
+    channels: {
+      adminApproval: process.env.LLM_ADMIN_APPROVAL_CHANNEL,
+      summary: process.env.LLM_SUMMARY_CHANNEL,
+      whitelist: process.env.LLM_CHANNEL_WHITELIST ? process.env.LLM_CHANNEL_WHITELIST.split(',') : [],
+    },
+    filters: {
+      minMessages: parseInt(process.env.LLM_MIN_MESSAGES || '10'),
+      lookbackWindow: parseInt(process.env.LLM_LOOKBACK_WINDOW || '100'),
+      relevanceThreshold: 0.7,
+    },
+    rateLimits: {
+      maxRequestsPerHour: 10,
+      cooldownBetweenChecks: 30 * 60 * 1000,  // 30 minutes
+    },
+    timeouts: {
+      adminApprovalTimeout: 24 * 60 * 60 * 1000,  // 24 hours
+      llmRequestTimeout: 30 * 1000,
+    },
+    prompts: {
+      relevanceCheck: './config/prompts/relevanceCheck.txt',
+      comprehensiveSummary: './config/prompts/comprehensiveSummary.txt',
+    }
   }
 };
