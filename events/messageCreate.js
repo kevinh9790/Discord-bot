@@ -6,7 +6,15 @@ const devLogHandler = require("../utils/devLogHandler.js");
 module.exports = {
   name: "messageCreate",
   async execute(message) {
-    if (message.author.bot) return;
+    // Debug: Log all messages to help troubleshoot collection issues
+    const isWebhook = message.webhookId ? '🔗 [WEBHOOK]' : '👤 [USER]';
+    const isBot = message.author.bot ? '🤖 [BOT]' : '✓';
+    console.log(`[MessageCreate] ${isWebhook} ${isBot} @${message.author.username} in #${message.channel.name}: "${message.content.substring(0, 60)}"`);
+
+    if (message.author.bot && !message.webhookId) {
+      console.log(`[MessageCreate] Skipping bot message`);
+      return;
+    }
 
     // 1. 處理活躍聊天管理
     activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
@@ -19,7 +27,11 @@ module.exports = {
     }
 
     // 2. 執行每日數據統計
-    statsHandler.trackMessageStats(message);
+    try {
+      statsHandler.trackMessageStats(message);
+    } catch(err) {
+      console.error("Stats Error:", err);
+    }
 
     // 3. 檢查是否為開發進度日誌 (如果是，這裡就會處理並回傳 true)
     const isDevLog = await devLogHandler.handleDevLog(message);

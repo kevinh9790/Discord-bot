@@ -97,23 +97,26 @@ module.exports = {
         try {
             if (!channel || !client) return;
 
+            console.log(`\n[LLMSummaryManager] ========== HOT CHANNEL DETECTED ==========`);
+            console.log(`[LLMSummaryManager] Channel: #${channel.name} (ID: ${channel.id})`);
+
             const llmConfig = config.LLM_SUMMARY || {};
 
             if (!llmConfig.enabled) {
+                console.log(`[LLMSummaryManager] ❌ LLM Summary not enabled`);
                 return;
             }
+
+            console.log(`[LLMSummaryManager] ✅ LLM Summary enabled`);
 
             // Check if channel is whitelisted
             if (llmConfig.channels.whitelist.length > 0 &&
                 !llmConfig.channels.whitelist.includes(channel.id)) {
+                console.log(`[LLMSummaryManager] ❌ Channel not in whitelist`);
                 return;
             }
 
-            // Check rate limits
-            if (!this._checkRateLimit(channel.id)) {
-                console.log(`[LLMSummaryManager] Rate limit exceeded for channel ${channel.id}`);
-                return;
-            }
+            console.log(`[LLMSummaryManager] ✅ Channel whitelist check passed`);
 
             console.log(`[LLMSummaryManager] Processing hot channel: ${channel.name}`);
 
@@ -123,23 +126,40 @@ module.exports = {
                 llmConfig.filters.lookbackWindow
             );
 
+            console.log(`[LLMSummaryManager] Collected ${messages.length} valid messages, min required: ${llmConfig.filters.minMessages}`);
+
             if (messages.length < llmConfig.filters.minMessages) {
-                console.log(`[LLMSummaryManager] Not enough messages (${messages.length}/${llmConfig.filters.minMessages})`);
+                console.log(`[LLMSummaryManager] ❌ Not enough messages (${messages.length}/${llmConfig.filters.minMessages})`);
                 return;
             }
 
+            console.log(`[LLMSummaryManager] ✅ Sufficient messages collected`);
+
             // Stage 1: Quick relevance check
+            console.log(`[LLMSummaryManager] Starting relevance check...`);
             const relevanceResult = await llmService.quickRelevanceCheck(messages);
+
+            console.log(`[LLMSummaryManager] Relevance Result:
+  - isRelevant: ${relevanceResult.isRelevant}
+  - category: ${relevanceResult.category}
+  - confidence: ${relevanceResult.confidence}
+  - threshold: ${llmConfig.filters.relevanceThreshold}
+  - reason: ${relevanceResult.reason}`);
 
             if (!relevanceResult.isRelevant ||
                 relevanceResult.confidence < llmConfig.filters.relevanceThreshold) {
-                console.log(`[LLMSummaryManager] Not relevant (confidence: ${relevanceResult.confidence})`);
+                console.log(`[LLMSummaryManager] ❌ Not relevant (confidence: ${relevanceResult.confidence})`);
                 return;
             }
+
+            console.log(`[LLMSummaryManager] ✅ Relevance check passed`);
+
 
             // Create summary entry
             const summaryId = this._generateId();
             const stats = conversationCollector.getStatistics(messages);
+
+            console.log(`[LLMSummaryManager] Creating summary entry: ${summaryId}`);
 
             state.pendingSummaries[summaryId] = {
                 id: summaryId,
@@ -154,10 +174,15 @@ module.exports = {
 
             saveState();
 
+            console.log(`[LLMSummaryManager] ✅ Summary entry created and saved`);
+            console.log(`[LLMSummaryManager] Sending admin notification...`);
+
             // Send admin notification
             await this._sendAdminNotification(summaryId, channel, client, relevanceResult, stats);
+            console.log(`[LLMSummaryManager] ========== HOT CHANNEL PROCESSING COMPLETE ==========\n`);
         } catch (error) {
             console.error('[LLMSummaryManager] Error in handleHotChannel:', error);
+            console.log(`[LLMSummaryManager] ========== HOT CHANNEL PROCESSING FAILED ==========\n`);
         }
     },
 

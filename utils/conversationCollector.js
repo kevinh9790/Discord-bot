@@ -14,46 +14,109 @@ module.exports = {
      */
     async collectMessages(channel, lookbackWindow = 100) {
         try {
+            console.log(`[ConversationCollector] Starting collection in #${channel.name} (ID: ${channel.id}), lookback: ${lookbackWindow}`);
+
             // Fetch messages from channel
             const messages = await channel.messages.fetch({ limit: lookbackWindow });
+            console.log(`[ConversationCollector] Fetched ${messages.size} total messages`);
 
             if (messages.size === 0) {
+                console.log('[ConversationCollector] No messages found');
                 return [];
             }
 
             // Convert to array and reverse to get chronological order
             const msgArray = Array.from(messages.values()).reverse();
+            console.log(`[ConversationCollector] Message order reversed (oldest to newest)`);
 
-            // Filter and format messages
-            const formatted = msgArray
-                .filter(msg => {
-                    // Exclude bot messages
-                    if (msg.author.bot) return false;
+            // Detailed filtering with logging
+            const filtered = [];
+            const filterReasons = {
+                botMessage: 0,
+                commandMessage: 0,
+                systemMessage: 0,
+                emptyMessage: 0,
+                testPrefix: 0,
+                valid: 0
+            };
 
-                    // Exclude commands (starting with &)
-                    if (msg.content.startsWith('&')) return false;
+            for (const msg of msgArray) {
+                let reason = null;
 
-                    // Exclude system messages
-                    if (msg.system) return false;
+                // Check if this is a webhook message (including [TEST] load test messages)
+                const isWebhook = msg.webhookId !== null;
+                const isTestMessage = msg.author.username && msg.author.username.includes('[TEST]');
 
-                    // Exclude empty messages
-                    if (!msg.content && msg.embeds.length === 0) return false;
+                // Include webhook messages with [TEST] prefix (they're intentional test data for LLM)
+                if (isWebhook && isTestMessage) {
+                    console.log(`  ✅ [WEBHOOK-TEST] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
+                    filterReasons.valid++;
+                    filtered.push(msg);
+                    continue;
+                }
 
-                    return true;
-                })
-                .map(msg => ({
-                    authorId: msg.author.id,
-                    authorName: msg.author.username,
-                    content: msg.content || this._extractEmbedContent(msg),
-                    timestamp: msg.createdAt.getTime(),
-                    attachments: msg.attachments.map(a => ({
-                        url: a.url,
-                        name: a.name,
-                        size: a.size
-                    })),
-                    embeds: msg.embeds.length > 0 ? msg.embeds.length : 0
-                }));
+                // Exclude regular bot messages (but not webhook test messages)
+                if (msg.author.bot) {
+                    reason = 'botMessage';
+                    filterReasons.botMessage++;
+                    console.log(`  ❌ [BOT] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
+                    continue;
+                }
 
+                // Exclude commands (starting with &)
+                if (msg.content.startsWith('&')) {
+                    reason = 'commandMessage';
+                    filterReasons.commandMessage++;
+                    console.log(`  ❌ [CMD] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
+                    continue;
+                }
+
+                // Exclude system messages
+                if (msg.system) {
+                    reason = 'systemMessage';
+                    filterReasons.systemMessage++;
+                    console.log(`  ❌ [SYS] System message`);
+                    continue;
+                }
+
+                // Exclude empty messages
+                if (!msg.content && msg.embeds.length === 0) {
+                    reason = 'emptyMessage';
+                    filterReasons.emptyMessage++;
+                    console.log(`  ❌ [EMPTY] No content or embeds`);
+                    continue;
+                }
+
+
+                // Valid message
+                filterReasons.valid++;
+                console.log(`  ✅ [VALID] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
+                filtered.push(msg);
+            }
+
+            console.log(`[ConversationCollector] Filter Summary:
+  - Total: ${msgArray.length}
+  - Valid messages (including [TEST] load tests): ${filterReasons.valid}
+  - Bot messages (excluded): ${filterReasons.botMessage}
+  - Commands (excluded): ${filterReasons.commandMessage}
+  - System messages (excluded): ${filterReasons.systemMessage}
+  - Empty messages (excluded): ${filterReasons.emptyMessage}`);
+
+            // Format valid messages
+            const formatted = filtered.map(msg => ({
+                authorId: msg.author.id,
+                authorName: msg.author.username,
+                content: msg.content || this._extractEmbedContent(msg),
+                timestamp: msg.createdAt.getTime(),
+                attachments: msg.attachments.map(a => ({
+                    url: a.url,
+                    name: a.name,
+                    size: a.size
+                })),
+                embeds: msg.embeds.length > 0 ? msg.embeds.length : 0
+            }));
+
+            console.log(`[ConversationCollector] Formatted ${formatted.length} messages for LLM`);
             return formatted;
         } catch (error) {
             console.error('[ConversationCollector] Failed to collect messages:', error);
@@ -77,7 +140,9 @@ module.exports = {
      * @returns {string} Formatted conversation text for LLM
      */
     formatForLLM(messages) {
-        return messages
+        console.log(`[ConversationCollector] Formatting ${messages.length} messages for LLM`);
+
+        const formatted = messages
             .map(msg => {
                 const time = new Date(msg.timestamp).toLocaleString('zh-TW', {
                     timeZone: 'Asia/Taipei',
@@ -89,6 +154,9 @@ module.exports = {
                 return `[${time}] ${msg.authorName}: ${msg.content}`;
             })
             .join('\n');
+
+        console.log(`[ConversationCollector] LLM Input Preview (first 500 chars):\n${formatted.substring(0, 500)}`);
+        return formatted;
     },
 
     /**
@@ -125,7 +193,7 @@ module.exports = {
         const totalWords = messages.reduce((sum, m) => sum + m.content.split(' ').length, 0);
         const hasAttachments = messages.filter(m => m.attachments.length > 0).length;
 
-        return {
+        const stats = {
             totalMessages: messages.length,
             uniqueAuthors: uniqueAuthors.size,
             totalWords,
@@ -135,5 +203,14 @@ module.exports = {
                 end: new Date(messages[messages.length - 1].timestamp)
             } : null
         };
+
+        console.log(`[ConversationCollector] Statistics:
+  - Total messages: ${stats.totalMessages}
+  - Unique authors: ${stats.uniqueAuthors}
+  - Total words: ${stats.totalWords}
+  - Messages with attachments: ${stats.messagesWithAttachments}
+  - Timespan: ${stats.timespan ? stats.timespan.start.toLocaleString() + ' - ' + stats.timespan.end.toLocaleString() : 'N/A'}`);
+
+        return stats;
     }
 };

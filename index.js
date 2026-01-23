@@ -93,8 +93,10 @@ client.login(process.env.TOKEN);
 
 // 🔁 自我 ping
 const PING_URL = config.PING_URL;
-setInterval(() => {
-  fetch(PING_URL)
-    .then(() => console.log(`🌀 dev自我 ping 成功 (${new Date().toLocaleTimeString()})`))
-    .catch(() => console.warn("⚠️ 自我 ping 失敗><"));
-}, 1000 * 60 * 4);
+if(PING_URL) {
+   setInterval(() => {
+    fetch(PING_URL)
+      .then(() => console.log(`🌀 dev自我 ping 成功 (${new Date().toLocaleTimeString()})`))
+      .catch(() => console.warn("⚠️ 自我 ping 失敗><"));
+  }, 1000 * 60 * 4); 
+}

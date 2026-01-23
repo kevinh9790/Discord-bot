@@ -63,11 +63,32 @@ loadState();
 
 module.exports = {
     async handleMessage(message) {
+        // Debug: Log all incoming messages
+        const isWebhook = message.webhookId ? '🔗 WEBHOOK' : 'USER';
+        console.log(`[ActiveChat] Handling ${isWebhook} @${message.author.username} in #${message.channel.name}`);
+
         // 基本檢查 log
-        if (!message.guild || message.guild.id !== CONFIG.targetGuildId) return;
-        if (message.author.bot) return;
-        if (CONFIG.ignoredCategories.includes(message.channel.parentId)) return;
-        if (message.channel.id === CONFIG.notificationChannelId) return;
+        if (!message.guild || message.guild.id !== CONFIG.targetGuildId) {
+            console.log(`[ActiveChat] Skipped: Guild ID mismatch (expected: ${CONFIG.targetGuildId}, got: ${message.guild?.id})`);
+            return;
+        }
+
+        if (message.author.bot) {
+            console.log(`[ActiveChat] Skipped: Bot message`);
+            return;
+        }
+
+        if (CONFIG.ignoredCategories.includes(message.channel.parentId)) {
+            console.log(`[ActiveChat] Skipped: Category ignored (${message.channel.parentId})`);
+            return;
+        }
+
+        if (message.channel.id === CONFIG.notificationChannelId) {
+            console.log(`[ActiveChat] Skipped: Notification channel`);
+            return;
+        }
+
+        console.log(`[ActiveChat] ✅ Message passed all initial checks`);
 
         checkDailyReset();
 
@@ -130,7 +151,8 @@ module.exports = {
 function checkRule(msgs, rule, now) {
     // 1. 先篩選時間內的訊息
     const recentMsgs = msgs.filter(m => now - m.timestamp < rule.duration);
-    
+    console.log(`[ActiveChat] [Rule Check] Duration: ${rule.duration}ms, Recent messages in window: ${recentMsgs.length}/${msgs.length}`);
+
     // 2. 計算「有效訊息數」 (套用單人上限)
     const userCounts = {};
     let effectiveMsgCount = 0;
@@ -149,7 +171,13 @@ function checkRule(msgs, rule, now) {
         }
     }
 
-    // console.log(`[Debug] 規則檢查: 人數=${uniqueUsers.size}, 有效訊息=${effectiveMsgCount}/${rule.minMsgs}`);
+    const ruleName = rule.minUsers === 3 && rule.minMsgs === 10 ? 'Rule 1' : 'Rule 2';
+    const userCheck = `👥 ${uniqueUsers.size}/${rule.minUsers} users`;
+    const msgCheck = `💬 ${effectiveMsgCount}/${rule.minMsgs} effective messages`;
+    const passed = uniqueUsers.size >= rule.minUsers && effectiveMsgCount >= rule.minMsgs;
+    const status = passed ? '✅' : '❌';
+
+    console.log(`[ActiveChat] [${ruleName}] ${status} ${userCheck} | ${msgCheck}`);
 
     // 3. 判定條件
     if (uniqueUsers.size < rule.minUsers) return false;
