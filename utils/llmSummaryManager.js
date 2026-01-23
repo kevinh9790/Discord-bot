@@ -58,7 +58,8 @@ function saveState() {
 loadState();
 
 // Clean up expired summaries every hour
-setInterval(() => {
+// Use .unref() to allow process to exit even if timer is pending (good for tests)
+const cleanupInterval = setInterval(() => {
     const now = Date.now();
     const llmConfig = config.LLM_SUMMARY || {};
     const timeout = llmConfig.timeouts?.adminApprovalTimeout || 24 * 60 * 60 * 1000;
@@ -79,6 +80,11 @@ setInterval(() => {
     state.lastCleanup = now;
     saveState();
 }, 60 * 60 * 1000);
+
+// Allow process to exit even if this interval is pending
+if (cleanupInterval.unref) {
+    cleanupInterval.unref();
+}
 
 module.exports = {
     /**
@@ -427,5 +433,15 @@ module.exports = {
             other: '❓ 其他'
         };
         return labels[category] || '❓ 其他';
+    },
+
+    /**
+     * Clean up resources (for testing)
+     * @internal
+     */
+    _cleanup() {
+        if (cleanupInterval) {
+            clearInterval(cleanupInterval);
+        }
     }
 };

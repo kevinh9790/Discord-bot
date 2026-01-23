@@ -28,12 +28,7 @@ Here's the analysis:
         });
 
         it('should handle raw JSON response', () => {
-            const response = '{
-  "isRelevant": false,
-  "confidence": 0.3,
-  "category": "other",
-  "reason": "無遊戲開發內容"
-}';
+            const response = '{\n  "isRelevant": false,\n  "confidence": 0.3,\n  "category": "other",\n  "reason": "無遊戲開發內容"\n}';
             const jsonMatch = response.match(/\{[\s\S]*\}/);
             expect(jsonMatch).toBeTruthy();
 

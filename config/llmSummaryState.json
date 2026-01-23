@@ -1,8 +1,12 @@
 {
   "pendingSummaries": {},
   "rateLimits": {
-    "hourlyRequests": {},
-    "channelCooldowns": {}
+    "hourlyRequests": {
+      "491439": 1
+    },
+    "channelCooldowns": {
+      "test-channel": 1769183432275
+    }
   },
   "lastCleanup": 0
 }
