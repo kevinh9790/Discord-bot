@@ -1,28 +1,81 @@
-﻿const { 
-    Events, 
-    ChannelType, 
-    PermissionFlagsBits, 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    ModalBuilder, 
-    TextInputBuilder, 
-    TextInputStyle, 
+﻿const {
+    Events,
+    ChannelType,
+    PermissionFlagsBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
     EmbedBuilder,
     AttachmentBuilder
 } = require('discord.js');
 const config = require('../config/config.js');
+const llmSummaryManager = require('../utils/llmSummaryManager.js');
 
-const SUGGESTION_CHANNEL_ID = config.CHANNELS.SUGGESTION; 
+const SUGGESTION_CHANNEL_ID = config.CHANNELS.SUGGESTION;
 const TICKET_LOG_CHANNEL_ID = config.CHANNELS.TICKET_LOG;
 
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction, client) {
-        
+
         // ====================================================
         // 🔘 區域 1：按鈕互動處理 (Button Interactions)
         // ====================================================
+        //#region LLM Summary Approval Buttons
+        if (interaction.isButton() && interaction.customId.startsWith('summary_approve_')) {
+            await interaction.deferReply({ ephemeral: true });
+
+            try {
+                const summaryId = interaction.customId.replace('summary_approve_', '');
+                const summary = llmSummaryManager.getPendingSummary(summaryId);
+
+                if (!summary) {
+                    return await interaction.editReply({
+                        content: '❌ 找不到該摘要或已過期'
+                    });
+                }
+
+                await interaction.editReply({
+                    content: '⏳ 正在生成完整摘要...'
+                });
+
+                await llmSummaryManager.generateFullSummary(summaryId, client);
+
+                await interaction.editReply({
+                    content: '✅ 摘要已生成並發佈到摘要頻道'
+                });
+            } catch (error) {
+                console.error('[SummaryApprove] Error:', error);
+                await interaction.editReply({
+                    content: `❌ 生成摘要時出錯：${error.message}`
+                });
+            }
+            return;
+        }
+
+        if (interaction.isButton() && interaction.customId.startsWith('summary_reject_')) {
+            await interaction.deferReply({ ephemeral: true });
+
+            try {
+                const summaryId = interaction.customId.replace('summary_reject_', '');
+                await llmSummaryManager.rejectSummary(summaryId);
+
+                await interaction.editReply({
+                    content: '✅ 已忽略此摘要'
+                });
+            } catch (error) {
+                console.error('[SummaryReject] Error:', error);
+                await interaction.editReply({
+                    content: `❌ 操作時出錯：${error.message}`
+                });
+            }
+            return;
+        }
+        //#endregion
+
         //#region 住客登記功能
         if (interaction.isButton()) {
             
