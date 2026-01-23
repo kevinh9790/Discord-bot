@@ -1,11 +1,353 @@
 {
-  "pendingSummaries": {},
+  "pendingSummaries": {
+    "urtu4kr3r": {
+      "id": "urtu4kr3r",
+      "channelId": "1464302384212742320",
+      "channelName": "load-test",
+      "createdAt": 1769191592198,
+      "messages": [
+        {
+          "authorId": "1464319107103985737",
+          "authorName": "[TEST] 開發者A",
+          "content": "各位，有人知道好用的免費像素藝術工具嗎？我想學習像素風格的美術設計～",
+          "timestamp": 1769191283817,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320247040315668",
+          "authorName": "[TEST] 開發者A",
+          "content": "各位，有人知道好用的免費像素藝術工具嗎？我想學習像素風格的美術設計～",
+          "timestamp": 1769191561565,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320251612364830",
+          "authorName": "[TEST] 設計師B",
+          "content": "Aseprite是業界標準，不過要付費。如果要免費的話，推薦試試 Piskel，線上版可以直接用，不用裝軟體。",
+          "timestamp": 1769191563876,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320251612364830",
+          "authorName": "[TEST] 設計師B",
+          "content": "還有 LibreSprite 和 Krita，Krita的像素功能也滿不錯的。我自己是 Aseprite + Krita 的組合。",
+          "timestamp": 1769191566288,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320257928990956",
+          "authorName": "[TEST] 開發者C",
+          "content": "我推薦去 itch.io 看看免費的 sprite 素材。很多talented artists都在上面分享免費資源～",
+          "timestamp": 1769191569060,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320261397545065",
+          "authorName": "[TEST] 美術D",
+          "content": "對！itch.io 的確有超多資源。我前陣子找的2D tiling set和character sprites都從那邊找的。省超多時間。",
+          "timestamp": 1769191571705,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320247040315668",
+          "authorName": "[TEST] 開發者A",
+          "content": "謝謝！那請問各位有推薦的遊戲開發框架嗎？我想做點小作品試試看。",
+          "timestamp": 1769191574005,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320257928990956",
+          "authorName": "[TEST] 開發者C",
+          "content": "看你要做什麼類型啦。Unity和Godot都很不錯。如果只是做簡單的2D游戲，Godot用GDScript會更快上手。",
+          "timestamp": 1769191576441,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320261397545065",
+          "authorName": "[TEST] 美術D",
+          "content": "我最近用Godot做了幾個prototype。社群滿活躍的，而且是open source的，非常推薦新手學習。",
+          "timestamp": 1769191578757,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320251612364830",
+          "authorName": "[TEST] 設計師B",
+          "content": "補充一下，OpenGameArt.org 也有很多免費的遊戲素材和音效。美術資源的寶庫！",
+          "timestamp": 1769191581071,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320247040315668",
+          "authorName": "[TEST] 開發者A",
+          "content": "太感謝了！資源這麼豐富，我可以開始著手做遊戲了。會定期上來分享進度～",
+          "timestamp": 1769191583645,
+          "attachments": [],
+          "embeds": 0
+        }
+      ],
+      "stats": {
+        "totalMessages": 11,
+        "uniqueAuthors": 5,
+        "totalWords": 30,
+        "messagesWithAttachments": 0,
+        "timespan": {
+          "start": "2026-01-23T18:01:23.817Z",
+          "end": "2026-01-23T18:06:23.645Z"
+        }
+      },
+      "relevanceResult": {
+        "isRelevant": true,
+        "confidence": 1,
+        "category": "resource",
+        "reason": "討論像素美術工具、遊戲引擎及素材資源分享。"
+      },
+      "status": "pending_approval"
+    },
+    "kr1vfs183": {
+      "id": "kr1vfs183",
+      "channelId": "1464302384212742320",
+      "channelName": "load-test",
+      "createdAt": 1769191726552,
+      "messages": [
+        {
+          "authorId": "1464319107103985737",
+          "authorName": "[TEST] 開發者A",
+          "content": "各位，有人知道好用的免費像素藝術工具嗎？我想學習像素風格的美術設計～",
+          "timestamp": 1769191283817,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320754081464481",
+          "authorName": "[TEST] 開發者A",
+          "content": "各位，有人知道好用的免費像素藝術工具嗎？我想學習像素風格的美術設計～",
+          "timestamp": 1769191676428,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320756547719413",
+          "authorName": "[TEST] 設計師B",
+          "content": "Aseprite是業界標準，不過要付費。如果要免費的話，推薦試試 Piskel，線上版可以直接用，不用裝軟體。",
+          "timestamp": 1769191681089,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320756547719413",
+          "authorName": "[TEST] 設計師B",
+          "content": "還有 LibreSprite 和 Krita，Krita的像素功能也滿不錯的。我自己是 Aseprite + Krita 的組合。",
+          "timestamp": 1769191685338,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320760041705493",
+          "authorName": "[TEST] 開發者C",
+          "content": "我推薦去 itch.io 看看免費的 sprite 素材。很多talented artists都在上面分享免費資源～",
+          "timestamp": 1769191693285,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320762918863095",
+          "authorName": "[TEST] 美術D",
+          "content": "對！itch.io 的確有超多資源。我前陣子找的2D tiling set和character sprites都從那邊找的。省超多時間。",
+          "timestamp": 1769191697575,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320754081464481",
+          "authorName": "[TEST] 開發者A",
+          "content": "謝謝！那請問各位有推薦的遊戲開發框架嗎？我想做點小作品試試看。",
+          "timestamp": 1769191702506,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320760041705493",
+          "authorName": "[TEST] 開發者C",
+          "content": "看你要做什麼類型啦。Unity和Godot都很不錯。如果只是做簡單的2D游戲，Godot用GDScript會更快上手。",
+          "timestamp": 1769191710428,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320762918863095",
+          "authorName": "[TEST] 美術D",
+          "content": "我最近用Godot做了幾個prototype。社群滿活躍的，而且是open source的，非常推薦新手學習。",
+          "timestamp": 1769191714716,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320756547719413",
+          "authorName": "[TEST] 設計師B",
+          "content": "補充一下，OpenGameArt.org 也有很多免費的遊戲素材和音效。美術資源的寶庫！",
+          "timestamp": 1769191720325,
+          "attachments": [],
+          "embeds": 0
+        }
+      ],
+      "stats": {
+        "totalMessages": 10,
+        "uniqueAuthors": 5,
+        "totalWords": 29,
+        "messagesWithAttachments": 0,
+        "timespan": {
+          "start": "2026-01-23T18:01:23.817Z",
+          "end": "2026-01-23T18:08:40.325Z"
+        }
+      },
+      "relevanceResult": {
+        "isRelevant": true,
+        "confidence": 1,
+        "category": "resource",
+        "reason": "涉及美術工具、開發引擎與資源分享。"
+      },
+      "status": "pending_approval"
+    },
+    "4o9oexsjw": {
+      "id": "4o9oexsjw",
+      "channelId": "1464302384212742320",
+      "channelName": "load-test",
+      "createdAt": 1769191735938,
+      "messages": [
+        {
+          "authorId": "1464319107103985737",
+          "authorName": "[TEST] 開發者A",
+          "content": "各位，有人知道好用的免費像素藝術工具嗎？我想學習像素風格的美術設計～",
+          "timestamp": 1769191283817,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320754081464481",
+          "authorName": "[TEST] 開發者A",
+          "content": "各位，有人知道好用的免費像素藝術工具嗎？我想學習像素風格的美術設計～",
+          "timestamp": 1769191676428,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320756547719413",
+          "authorName": "[TEST] 設計師B",
+          "content": "Aseprite是業界標準，不過要付費。如果要免費的話，推薦試試 Piskel，線上版可以直接用，不用裝軟體。",
+          "timestamp": 1769191681089,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320756547719413",
+          "authorName": "[TEST] 設計師B",
+          "content": "還有 LibreSprite 和 Krita，Krita的像素功能也滿不錯的。我自己是 Aseprite + Krita 的組合。",
+          "timestamp": 1769191685338,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320760041705493",
+          "authorName": "[TEST] 開發者C",
+          "content": "我推薦去 itch.io 看看免費的 sprite 素材。很多talented artists都在上面分享免費資源～",
+          "timestamp": 1769191693285,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320762918863095",
+          "authorName": "[TEST] 美術D",
+          "content": "對！itch.io 的確有超多資源。我前陣子找的2D tiling set和character sprites都從那邊找的。省超多時間。",
+          "timestamp": 1769191697575,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320754081464481",
+          "authorName": "[TEST] 開發者A",
+          "content": "謝謝！那請問各位有推薦的遊戲開發框架嗎？我想做點小作品試試看。",
+          "timestamp": 1769191702506,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320760041705493",
+          "authorName": "[TEST] 開發者C",
+          "content": "看你要做什麼類型啦。Unity和Godot都很不錯。如果只是做簡單的2D游戲，Godot用GDScript會更快上手。",
+          "timestamp": 1769191710428,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320762918863095",
+          "authorName": "[TEST] 美術D",
+          "content": "我最近用Godot做了幾個prototype。社群滿活躍的，而且是open source的，非常推薦新手學習。",
+          "timestamp": 1769191714716,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320756547719413",
+          "authorName": "[TEST] 設計師B",
+          "content": "補充一下，OpenGameArt.org 也有很多免費的遊戲素材和音效。美術資源的寶庫！",
+          "timestamp": 1769191720325,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320754081464481",
+          "authorName": "[TEST] 開發者A",
+          "content": "太感謝了！資源這麼豐富，我可以開始著手做遊戲了。會定期上來分享進度～",
+          "timestamp": 1769191725046,
+          "attachments": [],
+          "embeds": 0
+        },
+        {
+          "authorId": "1464320760041705493",
+          "authorName": "[TEST] 開發者C",
+          "content": "加油！有問題歡迎提問。我們社群很樂意幫助新手～一起加油吧！",
+          "timestamp": 1769191728365,
+          "attachments": [],
+          "embeds": 0
+        }
+      ],
+      "stats": {
+        "totalMessages": 12,
+        "uniqueAuthors": 5,
+        "totalWords": 31,
+        "messagesWithAttachments": 0,
+        "timespan": {
+          "start": "2026-01-23T18:01:23.817Z",
+          "end": "2026-01-23T18:08:48.365Z"
+        }
+      },
+      "relevanceResult": {
+        "isRelevant": true,
+        "confidence": 1,
+        "category": "resource",
+        "reason": "討論美術工具、引擎及開發資源分享。"
+      },
+      "status": "pending_approval"
+    }
+  },
   "rateLimits": {
     "hourlyRequests": {
-      "491439": 1
+      "491439": 1,
+      "491441": 1
     },
     "channelCooldowns": {
-      "test-channel": 1769183432275
+      "test-channel": 1769183432275,
+      "1464302384212742320": 1769188192071
     }
   },
   "lastCleanup": 0

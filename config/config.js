@@ -42,11 +42,11 @@ module.exports = {
   ACTIVE_CHAT: {
     IGNORED_CATEGORIES: [],
     // rule1: 3人(含)以上 60分鐘內 10則訊息
-    rule1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 2 },
+    RULE1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 2 },
     // rule2: 4人(含)以上 45分鐘內 8則訊息
-    rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
+    RULE2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
     // 冷卻 24 小時
-    cooldownTime: 24 * 60 * 60 * 1000
+    COOLDOWN: 24 * 60 * 60 * 1000
   },
 
   // LLM Summary Configuration
@@ -59,8 +59,8 @@ module.exports = {
       claude: process.env.ANTHROPIC_API_KEY,
     },
     models: {
-      relevanceCheck: 'gemini-1.5-flash',  // Fast, cheap model
-      fullSummary: 'gemini-1.5-pro',       // High quality model
+      relevanceCheck: 'gemini-3-flash-preview',  // Fast, cheap model
+      fullSummary: 'gemini-3-flash-preview',       // High quality model
     },
     channels: {
       adminApproval: process.env.LLM_ADMIN_APPROVAL_CHANNEL,
@@ -84,5 +84,16 @@ module.exports = {
       relevanceCheck: './config/prompts/relevanceCheck.txt',
       comprehensiveSummary: './config/prompts/comprehensiveSummary.txt',
     }
+  },
+
+  // Load Test Configuration
+  LOAD_TEST: {
+    enabled: process.env.LOAD_TEST_ENABLED === 'true',
+    allowedChannels: process.env.LOAD_TEST_CHANNELS ? process.env.LOAD_TEST_CHANNELS.split(',') : [],
+    requireTestPrefix: true,
+    maxUsers: 8,
+    maxMessages: 50,
+    autoCleanup: true,
+    maxRuntimeMinutes: 30
   }
 };
