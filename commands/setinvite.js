@@ -14,7 +14,7 @@ module.exports = {
                 return message.reply("格式：&設置邀請 [邀請碼] [角色ID]");
 
             // 去掉可能的方括號
-            const roleId = roleIdRaw.replace(/[\[\]]/g, "");
+            const roleId = roleIdRaw.replace(/[[\]]/g, "");
             const role = message.guild.roles.cache.get(roleId);
             if (!role) return message.reply(`❌ 找不到角色 ID: ${roleId}`);
 

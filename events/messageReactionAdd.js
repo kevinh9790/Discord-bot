@@ -97,7 +97,7 @@ module.exports = {
           // await log(client, `❌ [身分組] 已為 ${user.username} 移除角色`);
         }
       }
-    } catch (err) {
+    } catch {
       // await log(client, `🚨 [身分組] 執行錯誤：${err.message}`, 'error');
     }
     //#endregion

@@ -5,7 +5,7 @@ module.exports = {
     execute(message) {
       message.reply({
         content:[
-            `<#1445248647871729795>`
+            `想要吃大便???`
         ].join('\n'),
         allowedMentions: { parse: [] },
         embeds:[]//禁用嵌入卡片

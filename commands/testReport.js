@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+﻿const { EmbedBuilder } = require('discord.js');
 
 function formatDuration(ms) {
     const seconds = Math.floor((ms / 1000) % 60);

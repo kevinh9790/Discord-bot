@@ -21,6 +21,6 @@ module.exports = {
         });
         
         // 刪除管理員的指令訊息，保持版面乾淨
-        try { await message.delete(); } catch (e) {}
+        try { await message.delete(); } catch { /* ignore */ }
     },
 };

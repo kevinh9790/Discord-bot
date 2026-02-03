@@ -1,34 +1,94 @@
-﻿// utils/activeChatManager.js
+// utils/activeChatManager.js
+const fs = require('fs');
+const path = require('path');
+const config = require('../config/config.js');
+
+const STATE_FILE_PATH = path.join(__dirname, '../config/activeChatState.json');
 
 const CONFIG = {
-    targetGuildId: "1447566124924534859",
-    notificationChannelId: "1447566126102872217",
-    ignoredCategories: [],
-
-    // rule1: 3人(含)以上 60分鐘內 10則訊息
-    rule1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 2 },
-    // rule2: 4人(含)以上 45分鐘內 8則訊息
-    rule2: { minUsers: 4, minMsgs: 8, duration: 45 * 60 * 1000, maxContribution: 2 },
-
-    // 冷卻 6 小時
-    cooldownTime: 6 * 60 * 60 * 1000
+    targetGuildId: config.TARGET_GUILD_ID,
+    notificationChannelId: config.CHANNELS.LEADERBOARD,
+    ignoredCategories: config.ACTIVE_CHAT.IGNORED_CATEGORIES,
+    rule1: config.ACTIVE_CHAT.RULE1,
+    rule2: config.ACTIVE_CHAT.RULE2,
+    cooldownTime: config.ACTIVE_CHAT.COOLDOWN,
 };
 
 // 計算最長需要的時間區間 (取兩條規則中時間較長的那個)
 // 用於判斷「閒置重置」
 const MAX_DURATION = Math.max(CONFIG.rule1.duration, CONFIG.rule2.duration);
 
-const channelMessages = new Map();
-const channelCooldowns = new Map();
+// State Data
+let channelMessages = new Map();
+let channelCooldowns = new Map();
 let lastResetDate = new Date().toDateString();
+
+// --- Persistence Helpers ---
+function loadState() {
+    if (!fs.existsSync(STATE_FILE_PATH)) return;
+    try {
+        const raw = fs.readFileSync(STATE_FILE_PATH, 'utf8');
+        const data = JSON.parse(raw);
+        
+        if (data.messages) {
+            channelMessages = new Map(Object.entries(data.messages));
+        }
+        if (data.cooldowns) {
+            channelCooldowns = new Map(Object.entries(data.cooldowns));
+        }
+        if (data.lastResetDate) {
+            lastResetDate = data.lastResetDate;
+        }
+        // console.log(`[ActiveChat] State loaded. Tracking ${channelMessages.size} channels.`);
+    } catch (err) {
+        console.error('[ActiveChat] Failed to load state:', err);
+    }
+}
+
+function saveState() {
+    try {
+        const data = {
+            messages: Object.fromEntries(channelMessages),
+            cooldowns: Object.fromEntries(channelCooldowns),
+            lastResetDate: lastResetDate
+        };
+        fs.writeFileSync(STATE_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
+    } catch (err) {
+        console.error('[ActiveChat] Failed to save state:', err);
+    }
+}
+
+// Load state on startup
+loadState();
 
 module.exports = {
     async handleMessage(message) {
+        // Debug: Log all incoming messages
+        const isWebhook = message.webhookId ? '🔗 WEBHOOK' : 'USER';
+        console.log(`[ActiveChat] Handling ${isWebhook} @${message.author.username} in #${message.channel.name}`);
+
         // 基本檢查 log
-        if (!message.guild || message.guild.id !== CONFIG.targetGuildId) return;
-        if (message.author.bot) return;
-        if (CONFIG.ignoredCategories.includes(message.channel.parentId)) return;
-        if (message.channel.id === CONFIG.notificationChannelId) return;
+        if (!message.guild || message.guild.id !== CONFIG.targetGuildId) {
+            console.log(`[ActiveChat] Skipped: Guild ID mismatch (expected: ${CONFIG.targetGuildId}, got: ${message.guild?.id})`);
+            return;
+        }
+
+        if (message.author.bot) {
+            console.log(`[ActiveChat] Skipped: Bot message`);
+            return;
+        }
+
+        if (CONFIG.ignoredCategories.includes(message.channel.parentId)) {
+            console.log(`[ActiveChat] Skipped: Category ignored (${message.channel.parentId})`);
+            return;
+        }
+
+        if (message.channel.id === CONFIG.notificationChannelId) {
+            console.log(`[ActiveChat] Skipped: Notification channel`);
+            return;
+        }
+
+        console.log(`[ActiveChat] ✅ Message passed all initial checks`);
 
         checkDailyReset();
 
@@ -45,6 +105,7 @@ module.exports = {
             } else {
                 // 冷卻結束，移除標記
                 channelCooldowns.delete(channelId);
+                saveState(); // Update state
             }
         }
 
@@ -66,6 +127,9 @@ module.exports = {
         // 再次過濾：只保留時間範圍內的訊息 (Double Check，確保滑動視窗準確)
         const validMsgs = msgs.filter(m => now - m.timestamp < MAX_DURATION);
         channelMessages.set(channelId, validMsgs);
+        
+        // Save state after updating messages
+        saveState();
 
         // Debug 訊息 (測試完可註解)
          const uniqueUsers = new Set(validMsgs.map(m => m.authorId)).size;
@@ -78,6 +142,7 @@ module.exports = {
             // 通知發送成功後，馬上清空該頻道的累積訊息
             // 這樣下次必須從 0 開始累積，不會因為冷卻結束就馬上再次觸發
             channelMessages.set(channelId, []);
+            saveState(); // Update state
              console.log(`[ActiveChat] 已觸發通知，清空 ${message.channel.name} 的計數器`);
         }
     }
@@ -86,7 +151,8 @@ module.exports = {
 function checkRule(msgs, rule, now) {
     // 1. 先篩選時間內的訊息
     const recentMsgs = msgs.filter(m => now - m.timestamp < rule.duration);
-    
+    console.log(`[ActiveChat] [Rule Check] Duration: ${rule.duration}ms, Recent messages in window: ${recentMsgs.length}/${msgs.length}`);
+
     // 2. 計算「有效訊息數」 (套用單人上限)
     const userCounts = {};
     let effectiveMsgCount = 0;
@@ -105,7 +171,13 @@ function checkRule(msgs, rule, now) {
         }
     }
 
-    // console.log(`[Debug] 規則檢查: 人數=${uniqueUsers.size}, 有效訊息=${effectiveMsgCount}/${rule.minMsgs}`);
+    const ruleName = rule.minUsers === 3 && rule.minMsgs === 10 ? 'Rule 1' : 'Rule 2';
+    const userCheck = `👥 ${uniqueUsers.size}/${rule.minUsers} users`;
+    const msgCheck = `💬 ${effectiveMsgCount}/${rule.minMsgs} effective messages`;
+    const passed = uniqueUsers.size >= rule.minUsers && effectiveMsgCount >= rule.minMsgs;
+    const status = passed ? '✅' : '❌';
+
+    console.log(`[ActiveChat] [${ruleName}] ${status} ${userCheck} | ${msgCheck}`);
 
     // 3. 判定條件
     if (uniqueUsers.size < rule.minUsers) return false;
@@ -122,6 +194,7 @@ function checkDailyReset() {
         channelCooldowns.clear();
         // 每日重置時，建議也可以順便清空所有累積訊息，避免隔日第一則訊息就觸發舊的
         channelMessages.clear();
+        saveState(); // Save after reset
     }
 }
 
@@ -131,6 +204,7 @@ async function sendNotification(guild, activeChannel) {
         if (!notifyChannel) return console.log("⚠️ 活躍通知失敗：找不到通知頻道 ID");
 
         channelCooldowns.set(activeChannel.id, Date.now());
+        saveState(); // Save cooldown
 
         await notifyChannel.send({
             content: `<#${activeChannel.id}> 現在討論得很熱烈 🔥，趕快去看看吧！`
