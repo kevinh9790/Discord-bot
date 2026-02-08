@@ -352,10 +352,10 @@ Even with `LLM_DRY_RUN=false`, the bot will always log the token usage and estim
 ### Issue: No state being saved
 **Cause**: Disk write permissions or JSON corruption
 **Solution**:
-1. Verify `config/llmSummaryState.json` is readable/writable
-2. Check file permissions: `ls -la config/llmSummaryState.json`
+1. Verify `data/llmSummaryState.json` is readable/writable
+2. Check file permissions: `ls -la data/llmSummaryState.json`
 3. Check for JSON syntax errors in state file
-4. Clear state: `echo '{}' > config/llmSummaryState.json` (CAUTION: loses pending summaries)
+4. Clear state: `echo '{}' > data/llmSummaryState.json` (CAUTION: loses pending summaries)
 
 ---
 
@@ -380,7 +380,7 @@ Track usage in [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### Daily Maintenance
 
-- Monitor state file size: `ls -lh config/llmSummaryState.json`
+- Monitor state file size: `ls -lh data/llmSummaryState.json`
 - Check for expired summaries being cleaned up
 - Review bot logs for errors or rate limit issues
 
@@ -437,7 +437,7 @@ rateLimits: {
 
 ### If state file grows too large:
 1. Reduce `adminApprovalTimeout` (clean up faster)
-2. Check for orphaned summaries in `config/llmSummaryState.json`
+2. Check for orphaned summaries in `data/llmSummaryState.json`
 
 ---
 
@@ -460,7 +460,7 @@ If issues arise:
 
 3. **Clear state if corrupted**:
    ```bash
-   echo '{"pendingSummaries": {}, "rateLimits": {"hourlyRequests": {}, "channelCooldowns": {}}, "lastCleanup": 0}' > config/llmSummaryState.json
+   echo '{"pendingSummaries": {}, "rateLimits": {"hourlyRequests": {}, "channelCooldowns": {}}, "lastCleanup": 0}' > data/llmSummaryState.json
    ```
 
 ---
@@ -480,7 +480,7 @@ Uncomment debug lines in:
 npm run test  # Run test suite to verify functionality
 echo "API Key set: $([ -n "$GEMINI_API_KEY" ] && echo 'YES' || echo 'NO')"
 echo "Feature enabled: $(grep LLM_SUMMARY_ENABLED .env)"
-ls -la config/llmSummaryState.json
+ls -la data/llmSummaryState.json
 ```
 
 Share this report when seeking help.

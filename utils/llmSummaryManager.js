@@ -12,7 +12,7 @@ const conversationCollector = require('./conversationCollector.js');
 const llmService = require('./llmService.js');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 
-const STATE_FILE_PATH = path.join(__dirname, '../config/llmSummaryState.json');
+const STATE_FILE_PATH = path.join(__dirname, '../data/llmSummaryState.json');
 
 // Category color mapping
 const CATEGORY_COLORS = {

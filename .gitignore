@@ -1,6 +1,7 @@
 # Node.js
 node_modules/
 .env
+.env.production
 .vs/
 .DS_Store
 
@@ -15,3 +16,4 @@ yarn-error.log*
 # ServerData
 config/scheduledChannels.json
 inviteRoles.json
+data/
