@@ -33,8 +33,8 @@ This is a **Node.js Discord Bot** project, "Game Night Castle Bot". It is design
 
 ### 4. Key Features
 *   **Daily Statistics:** Tracks message counts, voice channel duration, and "most reacted" messages. Reports generated daily at 00:00 (Asia/Taipei).
-*   **LLM Discussion Summarization:** Automatically detects "hot" topics (via `activeChatManager`), checks relevance to game dev (via `llmService`), and generates comprehensive summaries using Gemini (via `llmSummaryManager`).
-*   **Event Announcements:** Fetches Discord Scheduled Events and announces them to a specific channel.
+*   **LLM Discussion Summarization:** Automatically detects "hot" topics (via `activeChatManager`), checks relevance to game dev (via `llmService`), and generates comprehensive summaries using Gemini (via `llmSummaryManager`). Includes **token counting** and **Dry Run mode** for zero-cost workflow testing.
+*   **Cost Control & Dry Run:** Every LLM interaction logs the estimated cost (USD) based on token counts. `LLM_DRY_RUN=true` allows full flow testing without calling the generative API.
 *   **Load Testing:** Simulates user conversations to test the LLM summary feature (`commands/loadtest.js`).
 *   **Invite Tracking:** Caches invite codes and usage counts.
 
