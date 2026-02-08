@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const config = require('../config/config.js');
 
-const STATE_FILE_PATH = path.join(__dirname, '../config/activeChatState.json');
+const STATE_FILE_PATH = path.join(__dirname, '../data/activeChatState.json');
 
 const CONFIG = {
     targetGuildId: config.TARGET_GUILD_ID,

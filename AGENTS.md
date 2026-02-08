@@ -42,8 +42,8 @@ This is a **Node.js Discord Bot** project, "Game Night Castle Bot". It is design
 *   **Central Config:** `config/config.js` is the single source of truth for constants, channel IDs, filters, and feature settings.
 *   **Environment Variables:** Managed via `.env` (e.g., `TOKEN`, `PORT`, `GEMINI_API_KEY`, `EVENT_ANNOUNCE_CHANNEL`).
 *   **State Persistence:**
-    - `config/activeChatState.json`: Persists active chat monitoring state.
-    - `config/llmSummaryState.json`: Persists pending summaries and rate limits.
+    - `data/activeChatState.json`: Persists active chat monitoring state.
+    - `data/llmSummaryState.json`: Persists pending summaries and rate limits.
 
 ## Development Conventions
 *   **Style:** CommonJS (`require`).
