@@ -50,6 +50,7 @@ This is a **Node.js Discord Bot** project, "Game Night Castle Bot". It is design
 *   **Formatting:** Standard JavaScript formatting.
 *   **Language:** Comments and user-facing messages are in **Traditional Chinese**.
 *   **Global State:** Runtime state is often attached to `client` or managed via singleton managers in `utils/`.
+*   **Git Workflow:** Pull requests should target the `dev` branch.
 
 ## Build & Run
 *   **Start:** `npm start` (Runs `node index.js`)
