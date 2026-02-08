@@ -106,6 +106,31 @@ class GeminiProvider {
             return false;
         }
     }
+
+    /**
+     * Count tokens for a given prompt
+     * @param {string} systemPrompt 
+     * @param {string} userMessage 
+     * @param {Object} options 
+     * @returns {Promise<number>} Total token count
+     */
+    async countTokens(systemPrompt, userMessage, options = {}) {
+        const modelName = options.model || 'gemini-1.5-flash';
+        
+        try {
+            const model = this.client.getGenerativeModel({ model: modelName });
+            
+            // Format content for token counting
+            // Note: systemInstruction is not directly supported in countTokens for all SDK versions,
+            // so we concatenate for estimation if needed, but best practice is to pass it if supported.
+            // For simplicity and safety with current SDK:
+            const result = await model.countTokens(systemPrompt + "\n\n" + userMessage);
+            return result.totalTokens;
+        } catch (error) {
+            console.error('[GeminiProvider] Token counting failed:', error);
+            return 0;
+        }
+    }
 }
 
 module.exports = GeminiProvider;

@@ -39,6 +39,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 # Feature toggles
 LLM_SUMMARY_ENABLED=true
+LLM_DRY_RUN=false              # Set to true to count tokens without API cost
 LLM_PROVIDER=gemini
 
 # Discord Channel IDs
@@ -284,6 +285,35 @@ The LLM Summary feature is automatically triggered when `activeChatManager` dete
 - ✅ Expired summary is removed during cleanup
 - ✅ Bot logs cleanup activity
 - ✅ No stale data in state file
+
+---
+
+## Cost Estimation & Dry Run
+
+### Dry Run Mode
+To test the entire workflow (from detection to admin approval) without incurring any Gemini API costs, you can enable Dry Run mode.
+
+**Setup**:
+```bash
+# In .env
+LLM_DRY_RUN=true
+```
+
+**How it works**:
+1. **Free Token Counting**: Uses the Gemini `countTokens` API (which is free) to calculate exactly how many tokens the prompt consumes.
+2. **Cost Logging**: Logs the token count and an estimated USD cost to the console:
+   `[LLM Token Cost] Relevance Check: 1234 tokens | Est. Cost: $0.000432 (Flash)`
+3. **Mock Responses**: Instead of calling the LLM for generation, the bot returns high-quality mock data.
+   - **Relevance Check**: Always returns `isRelevant: true` to allow testing the next steps.
+   - **Summary**: Returns a "Dry Run Summary" message.
+
+### Estimating Costs
+Even with `LLM_DRY_RUN=false`, the bot will always log the token usage and estimated cost for every API call. This helps you monitor actual usage in production.
+
+**Pricing Assumptions (Gemini 1.5 Flash)**:
+- ~$0.35 per 1 million input tokens.
+- ~$1.05 per 1 million output tokens.
+- (Prices are estimated and may vary by region/tier).
 
 ---
 

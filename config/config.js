@@ -52,6 +52,7 @@ module.exports = {
   // LLM Summary Configuration
   LLM_SUMMARY: {
     enabled: process.env.LLM_SUMMARY_ENABLED === 'true',
+    dryRun: process.env.LLM_DRY_RUN === 'true',
     provider: process.env.LLM_PROVIDER || 'gemini',
     apiKeys: {
       gemini: process.env.GEMINI_API_KEY,
