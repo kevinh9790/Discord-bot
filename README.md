@@ -1,5 +1,9 @@
 📁 專案目錄結構
 Discord-bot/
+├── docs/                    # 專案文件
+│   ├── llm_summary_setup.md # LLM 摘要功能設定指南
+│   └── loadtest_setup.md    # 負載測試設定指南
+├── AGENTS.md                # 開發者/AI 上下文文件
 ├── index.js                 # 主程式入口，初始化 bot
 ├── commands/                # 存放所有指令模組
 │   └── ping.js              # 範例指令：ping
@@ -23,6 +27,8 @@ Discord-bot/
 
 📚 各資料夾用途說明
 
+docs/：存放專案相關文件與設定指南。
+
 index.js：Bot 的主程式，啟動時會載入事件與定時任務。
 
 commands/：放置所有指令模組，每個檔案對應一個指令。
@@ -40,6 +46,12 @@ config/：集中管理設定變數（非敏感資訊）。
 .gitignore：排除不該加入 Git 的檔案。
 
 package.json：npm 專案設定。
+
+📖 進階文件
+
+- [開發者上下文 (AGENTS.md)](AGENTS.md)
+- [LLM 摘要功能設定 (llm_summary_setup.md)](docs/llm_summary_setup.md)
+- [負載測試設定 (loadtest_setup.md)](docs/loadtest_setup.md)
 
 
 
