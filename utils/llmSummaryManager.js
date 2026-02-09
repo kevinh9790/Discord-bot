@@ -12,7 +12,7 @@ const conversationCollector = require('./conversationCollector.js');
 const llmService = require('./llmService.js');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 
-const STATE_FILE_PATH = path.join(__dirname, '../config/llmSummaryState.json');
+const STATE_FILE_PATH = path.join(__dirname, '../data/llmSummaryState.json');
 
 // Category color mapping
 const CATEGORY_COLORS = {
@@ -332,6 +332,11 @@ module.exports = {
                     { name: '分類', value: this._getCategoryLabel(relevanceResult.category), inline: true },
                     { name: '相關度', value: `${(relevanceResult.confidence * 100).toFixed(0)}%`, inline: true },
                     { name: '原因', value: relevanceResult.reason || '無', inline: true },
+                    {
+                        name: '預估成本',
+                        value: `${relevanceResult.tokenCount} tokens (~$${(relevanceResult.tokenCount / 1000000 * 0.35).toFixed(6)})${llmConfig.dryRun ? ' (Dry Run)' : ''}`,
+                        inline: true
+                    },
                 )
                 .setFooter({ text: `ID: ${summaryId}` })
                 .setTimestamp();
@@ -426,7 +431,9 @@ module.exports = {
                     value: this._getCategoryLabel(relevanceResult.category),
                     inline: true
                 })
-                .setFooter({ text: `相關度: ${(relevanceResult.confidence * 100).toFixed(0)}%` })
+                .setFooter({
+                    text: `相關度: ${(relevanceResult.confidence * 100).toFixed(0)}% | 成本: ${fullSummary.tokenCount} tokens (~$${(fullSummary.tokenCount / 1000000 * 0.35).toFixed(6)})${config.LLM_SUMMARY.dryRun ? ' (Dry Run)' : ''}`
+                })
                 .setTimestamp();
 
             await channel.send({ embeds: [embed] });

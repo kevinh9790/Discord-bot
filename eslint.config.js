@@ -19,6 +19,6 @@ module.exports = [
         }
     },
     {
-        ignores: ["node_modules/**", ".git/**", "config/activeChatState.json"]
+        ignores: ["node_modules/**", ".git/**", "data/**"]
     }
 ];

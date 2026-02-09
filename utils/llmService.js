@@ -97,6 +97,24 @@ async function quickRelevanceCheck(messages, options = {}) {
 
         const userMessage = `以下是一段討論對話，請判斷是否與遊戲開發相關：\n\n${formattedMessages}\n\n訊息數量: ${messages.length}\n參與者: ${require('./conversationCollector.js').getUniqueAuthorsCount(messages)}人`;
 
+        // Token Counting & Dry Run
+        const tokenCount = await currentProvider.countTokens(systemPrompt, userMessage, {
+            model: llmConfig.models?.relevanceCheck || 'gemini-1.5-flash'
+        });
+        
+        console.log(`[LLM Token Cost] Relevance Check: ${tokenCount} tokens | Est. Cost: $${(tokenCount / 1000000 * 0.35).toFixed(6)} (Flash)`);
+
+        if (llmConfig.dryRun) {
+            console.log('[LLM Dry Run] Skipping actual API call for relevance check.');
+            return {
+                isRelevant: true, // Default to true to test workflow
+                confidence: 0.99,
+                category: 'technics',
+                reason: 'Dry Run Mode: Simulated positive relevance check',
+                tokenCount: tokenCount
+            };
+        }
+
         const response = await currentProvider.chat(
             systemPrompt,
             userMessage,
@@ -114,7 +132,8 @@ async function quickRelevanceCheck(messages, options = {}) {
                 isRelevant: false,
                 confidence: 0,
                 category: 'other',
-                reason: '無法解析LLM回應'
+                reason: '無法解析LLM回應',
+                tokenCount: tokenCount
             };
         }
 
@@ -123,7 +142,8 @@ async function quickRelevanceCheck(messages, options = {}) {
             isRelevant: result.isRelevant || false,
             confidence: result.confidence || 0,
             category: result.category || 'other',
-            reason: result.reason || ''
+            reason: result.reason || '',
+            tokenCount: tokenCount
         };
     } catch (error) {
         console.error('[LLMService] Relevance check failed:', error);
@@ -131,7 +151,8 @@ async function quickRelevanceCheck(messages, options = {}) {
             isRelevant: false,
             confidence: 0,
             category: 'error',
-            reason: `錯誤: ${error.message}`
+            reason: `錯誤: ${error.message}`,
+            tokenCount: 0
         };
     }
 }
@@ -162,6 +183,26 @@ async function generateSummary(messages, options = {}) {
 
         const userMessage = `請為以下討論對話生成完整摘要：\n\n${formattedMessages}\n\n對話統計:\n- 訊息數: ${messages.length}\n- 參與者: ${stats.uniqueAuthors}人\n- 總字數: ${stats.totalWords}`;
 
+        // Token Counting & Dry Run
+        const tokenCount = await currentProvider.countTokens(systemPrompt, userMessage, {
+            model: llmConfig.models?.fullSummary || 'gemini-1.5-pro'
+        });
+
+        console.log(`[LLM Token Cost] Full Summary: ${tokenCount} tokens | Est. Cost: $${(tokenCount / 1000000 * 0.35).toFixed(6)} (Flash)`);
+
+        if (llmConfig.dryRun) {
+            console.log('[LLM Dry Run] Skipping actual API call for summary generation.');
+            return {
+                title: 'Dry Run Summary Mode',
+                summary: '這是一個測試摘要。在 Dry Run 模式下，我們計算了 Token 數量但沒有發送請求給 LLM。實際運作時，這裡會顯示根據對話內容生成的完整摘要。',
+                keyPoints: ['Token 計算功能正常運作', '未產生 API 費用', '流程測試通過'],
+                participants: ['TestUser1', 'TestUser2'],
+                resources: ['https://example.com/resource'],
+                actionItems: ['Check logs for token count'],
+                tokenCount: tokenCount
+            };
+        }
+
         const response = await currentProvider.chat(
             systemPrompt,
             userMessage,
@@ -181,7 +222,8 @@ async function generateSummary(messages, options = {}) {
                 keyPoints: [],
                 participants: [],
                 resources: [],
-                actionItems: []
+                actionItems: [],
+                tokenCount: tokenCount
             };
         }
 
@@ -192,7 +234,8 @@ async function generateSummary(messages, options = {}) {
             keyPoints: result.keyPoints || [],
             participants: result.participants || [],
             resources: result.resources || [],
-            actionItems: result.actionItems || []
+            actionItems: result.actionItems || [],
+            tokenCount: tokenCount
         };
     } catch (error) {
         console.error('[LLMService] Summary generation failed:', error);
@@ -202,7 +245,8 @@ async function generateSummary(messages, options = {}) {
             keyPoints: [],
             participants: [],
             resources: [],
-            actionItems: []
+            actionItems: [],
+            tokenCount: 0
         };
     }
 }
