@@ -1,6 +1,6 @@
 ﻿// commands/ForTest.js
 module.exports = {
-    name: "想去論壇文章",
+    name: "測試",
     description: "大便香腸",
     execute(message) {
       message.reply({
