@@ -204,12 +204,14 @@ class LoadGenerator {
   /**
    * Cleanup: Delete webhooks and messages
    * @param {Channel} channel - Discord channel
+   * @param {Object} options - Cleanup options
    * @returns {Promise<void>}
    */
-  async cleanup(channel) {
+  async cleanup(channel, options = { messages: true, webhooks: true }) {
     try {
       // Delete messages
-      if (this.messageIds.length > 0 && channel) {
+      if (options.messages && this.messageIds.length > 0 && channel) {
+        console.log(`[LoadGenerator] Cleaning up ${this.messageIds.length} messages...`);
         for (const msgInfo of this.messageIds) {
           try {
             const message = await channel.messages.fetch(msgInfo.id);
@@ -217,13 +219,13 @@ class LoadGenerator {
             await this.delay(100); // Rate limit protection
           } catch (err) {
             // Message may already be deleted or inaccessible, continue
-            console.error(`Could not delete message ${msgInfo.id}:`, err.message);
           }
         }
       }
 
       // Delete webhooks
-      if (this.webhooks.length > 0 && channel) {
+      if (options.webhooks && this.webhooks.length > 0 && channel) {
+        console.log(`[LoadGenerator] Cleaning up ${this.webhooks.length} webhooks...`);
         for (const webhook of this.webhooks) {
           try {
             const w = await channel.client.fetchWebhook(webhook.id, webhook.token);
@@ -231,13 +233,12 @@ class LoadGenerator {
             await this.delay(200); // Rate limit protection
           } catch (err) {
             // Webhook may already be deleted, continue
-            console.error(`Could not delete webhook ${webhook.id}:`, err.message);
           }
         }
       }
 
-      this.webhooks = [];
-      this.messageIds = [];
+      if (options.webhooks) this.webhooks = [];
+      if (options.messages) this.messageIds = [];
     } catch (error) {
       console.error('Cleanup error:', error);
     }

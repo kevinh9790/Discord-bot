@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('crypto').randomUUID ? { v4: () => require('crypto').randomUUID() } : { v4: () => Math.random().toString(36).substr(2, 9) };
 const config = require('../config/config.js');
 const conversationCollector = require('./conversationCollector.js');
@@ -31,6 +32,7 @@ let state = {
         hourlyRequests: {},
         channelCooldowns: {}
     },
+    summarizedTopicFingerprints: [],
     lastCleanup: 0
 };
 
@@ -39,7 +41,9 @@ function loadState() {
     try {
         if (fs.existsSync(STATE_FILE_PATH)) {
             const raw = fs.readFileSync(STATE_FILE_PATH, 'utf8');
-            state = JSON.parse(raw);
+            const loaded = JSON.parse(raw);
+            state = { ...state, ...loaded };
+            if (!state.summarizedTopicFingerprints) state.summarizedTopicFingerprints = [];
             console.log('[LLMSummaryManager] State loaded');
         }
     } catch (error) {
@@ -87,6 +91,101 @@ if (cleanupInterval.unref) {
 }
 
 module.exports = {
+    /**
+     * 每日回顧掃描所有白名單頻道
+     */
+    async performDailyScan(client) {
+        try {
+            console.log(`\n[LLMSummaryManager] ========== STARTING DAILY RETROSPECTIVE SCAN ==========`);
+            const llmConfig = config.LLM_SUMMARY || {};
+            if (!llmConfig.enabled) return;
+
+            const whitelist = llmConfig.channels.whitelist;
+            const maturationMs = (llmConfig.filters.maturationDays || 3) * 24 * 60 * 60 * 1000;
+            const scanDays = llmConfig.filters.scanLimitDays || 7;
+            
+            // Stabilize "now" to the start of the current hour for consistent windowing
+            const now = new Date();
+            now.setMinutes(0, 0, 0);
+            const stableNow = now.getTime();
+            const maturationPoint = stableNow - maturationMs;
+
+            for (const channelId of whitelist) {
+                const channel = client.channels.cache.get(channelId);
+                if (!channel) continue;
+
+                console.log(`[LLMSummaryManager] Scanning #${channel.name}...`);
+                
+                // 取得時間窗口內的歷史訊息
+                const messages = await conversationCollector.collectMessagesInTimeWindow(channel, scanDays);
+                if (messages.length < llmConfig.filters.minMessages) continue;
+
+                // 第一階段：主題發現
+                console.log(`[LLMSummaryManager] Discovering topics in #${channel.name} (${messages.length} messages)...`);
+                const clusters = await llmService.discoverTopics(messages);
+                
+                for (const cluster of clusters) {
+                    if (!cluster.isRelevant || cluster.confidence < llmConfig.filters.relevanceThreshold) continue;
+
+                    // Map IDs back to message objects
+                    const clusterMsgs = messages.filter(m => cluster.messageIds.includes(m.id));
+                    
+                    // 第二階段：成熟度檢查
+                    // 核心部分：早於成熟時間點的訊息
+                    const mainPart = clusterMsgs.filter(m => m.timestamp < maturationPoint);
+                    
+                    if (mainPart.length < llmConfig.filters.minMessages) {
+                        console.log(`[LLMSummaryManager] Topic "${cluster.topic}" too young or small (main part: ${mainPart.length})`);
+                        continue;
+                    }
+
+                    // 第三階段：去重複使用「錨點指紋」(Anchor Fingerprint)
+                    // 使用討論簇中最早的 5 則訊息 ID 作為錨點
+                    // 這確保即使後續討論進入成熟窗口，指紋依然穩定不變
+                    const sortedClusterIds = [...cluster.messageIds].sort();
+                    const anchorIds = sortedClusterIds.slice(0, 5);
+                    const fingerprint = this._generateFingerprint(anchorIds);
+                    
+                    if (state.summarizedTopicFingerprints.includes(fingerprint)) {
+                        console.log(`[LLMSummaryManager] Topic "${cluster.topic}" already summarized (anchor fingerprint match)`);
+                        continue;
+                    }
+
+                    console.log(`[LLMSummaryManager] ✅ Topic "${cluster.topic}" ready for summary!`);
+
+                    // 建立管理員審核項目
+                    const summaryId = this._generateId();
+                    const stats = conversationCollector.getStatistics(clusterMsgs);
+
+                    state.pendingSummaries[summaryId] = {
+                        id: summaryId,
+                        channelId: channel.id,
+                        channelName: channel.name,
+                        topicName: cluster.topic,
+                        createdAt: Date.now(),
+                        messages: clusterMsgs,
+                        stats: stats,
+                        relevanceResult: {
+                            isRelevant: true,
+                            category: cluster.category,
+                            confidence: cluster.confidence,
+                            reason: cluster.reason
+                        },
+                        status: 'pending_approval',
+                        fingerprint: fingerprint
+                    };
+                    
+                    await this._sendAdminNotification(summaryId, channel, client, state.pendingSummaries[summaryId].relevanceResult, stats, cluster.topic);
+                }
+            }
+            
+            saveState();
+            console.log(`[LLMSummaryManager] ========== DAILY SCAN COMPLETE ==========\n`);
+        } catch (error) {
+            console.error('[LLMSummaryManager] Daily scan failed:', error);
+        }
+    },
+
     /**
      * Hook called when activeChatManager detects a hot channel
      * @param {Channel} channel - The active channel
@@ -211,6 +310,14 @@ module.exports = {
             summary.completedAt = Date.now();
             saveState();
 
+            // 加入已摘要的指紋清單
+            state.summarizedTopicFingerprints.push(summary.fingerprint);
+            // 僅保留最近 1000 筆指紋，避免無限增長
+            if (state.summarizedTopicFingerprints.length > 1000) {
+                state.summarizedTopicFingerprints.shift();
+            }
+            saveState();
+
             // Post to summary channel
             const summaryChannel = client.channels.cache.get(llmConfig.channels.summary);
             if (summaryChannel) {
@@ -312,7 +419,7 @@ module.exports = {
      * Send admin notification with approval buttons
      * @private
      */
-    async _sendAdminNotification(summaryId, channel, client, relevanceResult, stats) {
+    async _sendAdminNotification(summaryId, channel, client, relevanceResult, stats, topicName = null) {
         try {
             const llmConfig = config.LLM_SUMMARY || {};
             const adminChannel = client.channels.cache.get(llmConfig.channels.adminApproval);
@@ -323,7 +430,7 @@ module.exports = {
             }
 
             const embed = new EmbedBuilder()
-                .setTitle('🔍 偵測到可能相關的遊戲開發討論')
+                .setTitle(topicName ? `🔍 偵測到討論主題: ${topicName}` : '🔍 偵測到可能相關的遊戲開發討論')
                 .setColor(CATEGORY_COLORS[relevanceResult.category] || 0x3498DB)
                 .addFields(
                     { name: '頻道', value: `<#${channel.id}>`, inline: true },
@@ -341,10 +448,10 @@ module.exports = {
                 .setFooter({ text: `ID: ${summaryId}` })
                 .setTimestamp();
 
-            // Add message preview
-            const preview = await conversationCollector.formatForLLM(
-                (await conversationCollector.collectMessages(channel, 3)).slice(0, 3)
-            );
+            // 取得訊息預覽（使用已收集的訊息，避免重複呼叫 Discord API）
+            const pendingSummary = state.pendingSummaries[summaryId];
+            const previewMessages = (pendingSummary?.messages || []).slice(-3);
+            const preview = conversationCollector.formatForLLM(previewMessages);
             if (preview.length > 1024) {
                 embed.addFields({
                     name: '對話預覽',
@@ -386,7 +493,7 @@ module.exports = {
             const relevanceResult = summary.relevanceResult;
 
             const embed = new EmbedBuilder()
-                .setTitle(`📝 ${fullSummary.title}`)
+                .setTitle(`📝 ${fullSummary.title}${summary.topicName ? ` (${summary.topicName})` : ''}`)
                 .setColor(CATEGORY_COLORS[relevanceResult.category] || 0x3498DB)
                 .addFields(
                     { name: '摘要', value: fullSummary.summary || '(無)' },
@@ -449,6 +556,15 @@ module.exports = {
      */
     _generateId() {
         return Math.random().toString(36).substring(2, 11);
+    },
+
+    /**
+     * 為一組訊息 ID 產生唯一指紋
+     * @private
+     */
+    _generateFingerprint(messageIds) {
+        const sortedIds = [...messageIds].sort();
+        return crypto.createHash('md5').update(sortedIds.join(',')).digest('hex');
     },
 
     /**

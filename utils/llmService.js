@@ -99,7 +99,7 @@ async function quickRelevanceCheck(messages, options = {}) {
 
         // Token Counting & Dry Run
         const tokenCount = await currentProvider.countTokens(systemPrompt, userMessage, {
-            model: llmConfig.models?.relevanceCheck || 'gemini-1.5-flash'
+            model: llmConfig.models?.relevanceCheck || 'gemini-2.0-flash'
         });
         
         console.log(`[LLM Token Cost] Relevance Check: ${tokenCount} tokens | Est. Cost: $${(tokenCount / 1000000 * 0.35).toFixed(6)} (Flash)`);
@@ -119,13 +119,13 @@ async function quickRelevanceCheck(messages, options = {}) {
             systemPrompt,
             userMessage,
             {
-                model: llmConfig.models?.relevanceCheck || 'gemini-1.5-flash',
+                model: llmConfig.models?.relevanceCheck || 'gemini-2.0-flash',
                 timeout: llmConfig.timeouts?.llmRequestTimeout || 30000
             }
         );
 
         // Parse JSON response
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonMatch = response.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
         if (!jsonMatch) {
             console.error('[LLMService] Failed to extract JSON from relevance response');
             return {
@@ -185,7 +185,7 @@ async function generateSummary(messages, options = {}) {
 
         // Token Counting & Dry Run
         const tokenCount = await currentProvider.countTokens(systemPrompt, userMessage, {
-            model: llmConfig.models?.fullSummary || 'gemini-1.5-pro'
+            model: llmConfig.models?.fullSummary || 'gemini-2.0-flash'
         });
 
         console.log(`[LLM Token Cost] Full Summary: ${tokenCount} tokens | Est. Cost: $${(tokenCount / 1000000 * 0.35).toFixed(6)} (Flash)`);
@@ -207,13 +207,13 @@ async function generateSummary(messages, options = {}) {
             systemPrompt,
             userMessage,
             {
-                model: llmConfig.models?.fullSummary || 'gemini-1.5-pro',
+                model: llmConfig.models?.fullSummary || 'gemini-2.0-flash',
                 timeout: llmConfig.timeouts?.llmRequestTimeout || 30000
             }
         );
 
         // Parse JSON response
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonMatch = response.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
         if (!jsonMatch) {
             console.error('[LLMService] Failed to extract JSON from summary response');
             return {
@@ -263,5 +263,78 @@ module.exports = {
     initialize,
     quickRelevanceCheck,
     generateSummary,
-    getProviderInfo
+    getProviderInfo,
+    /**
+     * 分析訊息列表並聚類識別討論主題
+     * @param {Array} messages - 格式化後的訊息陣列
+     * @returns {Promise<Array>} 討論主題聚類列表
+     */
+    async discoverTopics(messages) {
+        try {
+            if (!currentProvider) {
+                if (!initialize()) {
+                    throw new Error('LLM provider not initialized');
+                }
+            }
+
+            const llmConfig = config.LLM_SUMMARY || {};
+
+            // 格式化訊息，包含 ID 供 LLM 在回傳 messageIds 時使用
+            const formattedMessages = messages.map(msg => {
+                const time = new Date(msg.timestamp).toLocaleString('zh-TW', {
+                    timeZone: 'Asia/Taipei',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                return `[ID:${msg.id}] [${time}] ${msg.authorName}: ${msg.content}`;
+            }).join('\n');
+
+            // 載入主題發現提示詞
+            const fs = require('fs');
+            const path = require('path');
+            const promptPath = path.join(__dirname, '../config/prompts/topicDiscovery.txt');
+            const systemPrompt = fs.readFileSync(promptPath, 'utf8');
+
+            const userMessage = `請分析以下對話並區分討論主題：\n\n${formattedMessages}`;
+
+            // 計算 Token 數量
+            const tokenCount = await currentProvider.countTokens(systemPrompt, userMessage, {
+                model: llmConfig.models?.topicDiscovery || 'gemini-2.0-flash'
+            });
+
+            console.log(`[LLM Token Cost] Topic Discovery: ${tokenCount} tokens`);
+
+            if (llmConfig.dryRun) {
+                console.log('[LLM Dry Run] Simulating topic discovery');
+                return [{
+                    topic: 'Dry Run Topic',
+                    messageIds: messages.map(m => m.id),
+                    isRelevant: true,
+                    confidence: 1.0,
+                    category: 'technics',
+                    reason: 'Dry Run'
+                }];
+            }
+
+            const response = await currentProvider.chat(
+                systemPrompt,
+                userMessage,
+                {
+                    model: llmConfig.models?.topicDiscovery || 'gemini-2.0-flash',
+                    timeout: llmConfig.timeouts?.llmRequestTimeout || 60000
+                }
+            );
+
+            const jsonMatch = response.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+            if (!jsonMatch) throw new Error('Failed to parse clusters JSON');
+
+            const result = JSON.parse(jsonMatch[0]);
+            return result.clusters || result || [];
+        } catch (error) {
+            console.error('[LLMService] Topic discovery failed:', error);
+            return [];
+        }
+    }
 };
