@@ -37,7 +37,8 @@ module.exports = {
           { name: '預設對話', value: options.preset, inline: true },
           { name: '模擬使用者', value: `${options.users}位`, inline: true },
           { name: '訊息數量', value: `${options.messages || '模板預設'}`, inline: true },
-          { name: '傳送速率', value: options.rate, inline: true }
+          { name: '傳送速率', value: options.rate, inline: true },
+          { name: '自動清理', value: options.cleanup ? '✅ 開啟' : '❌ 關閉', inline: true }
         )
         .setTimestamp();
 
@@ -45,21 +46,20 @@ module.exports = {
 
       // Initialize load generator
       const generator = new LoadGenerator();
-      let progressInterval;
-
+      
       try {
         // Start load test
         const result = await generator.execute(message.channel, {
           preset: options.preset,
           users: options.users,
-          rate: options.rate,
-          progressCallback: (progress) => {
-            // Update progress every message
-          }
+          rate: options.rate
         });
 
-        // Cleanup: delete all test messages and webhooks
-        await generator.cleanup(message.channel);
+        // Always cleanup webhooks, but messages only if requested
+        await generator.cleanup(message.channel, { 
+          messages: options.cleanup, 
+          webhooks: true 
+        });
 
         // Create success report embed
         const reportEmbed = new EmbedBuilder()
@@ -72,7 +72,11 @@ module.exports = {
             { name: '模擬使用者', value: `${result.webhooksCreated}位`, inline: true },
             { name: '傳送訊息', value: `${result.messagesSent}則`, inline: true },
             { name: '執行時間', value: `${result.stats.durationSeconds}秒`, inline: true },
-            { name: '清理狀態', value: '✅ 已清除所有測試訊息和 webhook', inline: true }
+            { 
+              name: '訊息處理', 
+              value: options.cleanup ? '✅ 已清除所有測試訊息' : '📌 已保留訊息 (供成熟度掃描測試)', 
+              inline: true 
+            }
           );
 
         // Add trigger estimation
@@ -98,9 +102,12 @@ module.exports = {
         await statusMessage.edit({ embeds: [reportEmbed] });
 
       } catch (error) {
-        // Cleanup on error
+        // Cleanup on error: Always clear webhooks, messages only if requested
         try {
-          await generator.cleanup(message.channel);
+          await generator.cleanup(message.channel, {
+            messages: options.cleanup,
+            webhooks: true
+          });
         } catch (cleanupErr) {
           console.error('Cleanup error:', cleanupErr);
         }
@@ -124,7 +131,7 @@ module.exports = {
 
 /**
  * Parse command arguments
- * Format: &loadtest [users=N] [rate=slow|medium|fast] [preset=name]
+ * Format: &loadtest [users=N] [rate=slow|medium|fast] [preset=name] [cleanup=true]
  * @param {Array} args - Raw command arguments
  * @returns {Object} Parsed options
  */
@@ -133,7 +140,8 @@ function parseArguments(args) {
     users: 3,
     rate: 'medium',
     preset: 'unity-technical',
-    messages: null
+    messages: null,
+    cleanup: false
   };
 
   // Parse key=value arguments
@@ -142,6 +150,9 @@ function parseArguments(args) {
     if (!key || !value) continue;
 
     switch (key.toLowerCase()) {
+      case 'cleanup':
+        defaults.cleanup = value.toLowerCase() === 'true';
+        break;
       case 'users':
       case 'user':
         const userCount = parseInt(value);

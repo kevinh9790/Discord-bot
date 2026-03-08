@@ -7,6 +7,92 @@ const config = require('../config/config.js');
 
 module.exports = {
     /**
+     * 從指定頻道收集特定時間窗口內的訊息
+     * @param {Channel} channel - 要收集訊息的 Discord 頻道
+     * @param {number} days - 往回查詢的天數
+     * @returns {Promise<Array>} 格式化後的訊息陣列
+     */
+    async collectMessagesInTimeWindow(channel, days = 7) {
+        try {
+            const lookbackMs = days * 24 * 60 * 60 * 1000;
+            const startTime = Date.now() - lookbackMs;
+            
+            console.log(`[ConversationCollector] Starting windowed collection in #${channel.name}, days: ${days}`);
+            
+            let allMessages = [];
+            let lastId = null;
+            let reachedStart = false;
+
+            while (!reachedStart) {
+                const options = { limit: 100 };
+                if (lastId) options.before = lastId;
+
+                const fetched = await channel.messages.fetch(options);
+                if (fetched.size === 0) break;
+
+                for (const msg of fetched.values()) {
+                    if (msg.createdAt.getTime() < startTime) {
+                        reachedStart = true;
+                        break;
+                    }
+                    allMessages.push(msg);
+                    lastId = msg.id;
+                }
+
+                if (fetched.size < 100) break;
+            }
+
+            console.log(`[ConversationCollector] Fetched ${allMessages.size || allMessages.length} raw messages from window`);
+
+            // Use the same filtering logic as collectMessages
+            return this._processRawMessages(allMessages);
+        } catch (error) {
+            console.error('[ConversationCollector] Windowed collection failed:', error);
+            return [];
+        }
+    },
+
+    /**
+     * 內部輔助函式，處理並過濾原始 Discord 訊息
+     * @private
+     */
+    _processRawMessages(msgArray) {
+        // 依時間排序（由舊到新）
+        const sortedMsgs = Array.from(msgArray).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+        
+        const filtered = [];
+        for (const msg of sortedMsgs) {
+            // 保留帶有 [TEST] 前綴的 webhook 測試訊息
+            const isWebhook = msg.webhookId !== null;
+            const isTestMessage = msg.author.username && msg.author.username.includes('[TEST]');
+
+            if (isWebhook && isTestMessage) {
+                filtered.push(msg);
+                continue;
+            }
+
+            if (msg.author.bot || msg.content.startsWith('&') || msg.system) continue;
+            if (!msg.content && msg.embeds.length === 0) continue;
+
+            filtered.push(msg);
+        }
+
+        return filtered.map(msg => ({
+            id: msg.id, // 加入訊息 ID，供主題聚類使用
+            authorId: msg.author.id,
+            authorName: msg.author.username,
+            content: msg.content || this._extractEmbedContent(msg),
+            timestamp: msg.createdAt.getTime(),
+            attachments: msg.attachments.map(a => ({
+                url: a.url,
+                name: a.name,
+                size: a.size
+            })),
+            embeds: msg.embeds.length > 0 ? msg.embeds.length : 0
+        }));
+    },
+
+    /**
      * Collect messages from a channel for LLM analysis
      * @param {Channel} channel - Discord channel to collect from
      * @param {number} lookbackWindow - Number of messages to look back (default: 100)
@@ -18,106 +104,7 @@ module.exports = {
 
             // Fetch messages from channel
             const messages = await channel.messages.fetch({ limit: lookbackWindow });
-            console.log(`[ConversationCollector] Fetched ${messages.size} total messages`);
-
-            if (messages.size === 0) {
-                console.log('[ConversationCollector] No messages found');
-                return [];
-            }
-
-            // Convert to array and reverse to get chronological order
-            const msgArray = Array.from(messages.values()).reverse();
-            console.log(`[ConversationCollector] Message order reversed (oldest to newest)`);
-
-            // Detailed filtering with logging
-            const filtered = [];
-            const filterReasons = {
-                botMessage: 0,
-                commandMessage: 0,
-                systemMessage: 0,
-                emptyMessage: 0,
-                testPrefix: 0,
-                valid: 0
-            };
-
-            for (const msg of msgArray) {
-                let reason = null;
-
-                // Check if this is a webhook message (including [TEST] load test messages)
-                const isWebhook = msg.webhookId !== null;
-                const isTestMessage = msg.author.username && msg.author.username.includes('[TEST]');
-
-                // Include webhook messages with [TEST] prefix (they're intentional test data for LLM)
-                if (isWebhook && isTestMessage) {
-                    console.log(`  ✅ [WEBHOOK-TEST] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
-                    filterReasons.valid++;
-                    filtered.push(msg);
-                    continue;
-                }
-
-                // Exclude regular bot messages (but not webhook test messages)
-                if (msg.author.bot) {
-                    reason = 'botMessage';
-                    filterReasons.botMessage++;
-                    console.log(`  ❌ [BOT] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
-                    continue;
-                }
-
-                // Exclude commands (starting with &)
-                if (msg.content.startsWith('&')) {
-                    reason = 'commandMessage';
-                    filterReasons.commandMessage++;
-                    console.log(`  ❌ [CMD] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
-                    continue;
-                }
-
-                // Exclude system messages
-                if (msg.system) {
-                    reason = 'systemMessage';
-                    filterReasons.systemMessage++;
-                    console.log(`  ❌ [SYS] System message`);
-                    continue;
-                }
-
-                // Exclude empty messages
-                if (!msg.content && msg.embeds.length === 0) {
-                    reason = 'emptyMessage';
-                    filterReasons.emptyMessage++;
-                    console.log(`  ❌ [EMPTY] No content or embeds`);
-                    continue;
-                }
-
-
-                // Valid message
-                filterReasons.valid++;
-                console.log(`  ✅ [VALID] @${msg.author.username}: "${msg.content.substring(0, 50)}"`);
-                filtered.push(msg);
-            }
-
-            console.log(`[ConversationCollector] Filter Summary:
-  - Total: ${msgArray.length}
-  - Valid messages (including [TEST] load tests): ${filterReasons.valid}
-  - Bot messages (excluded): ${filterReasons.botMessage}
-  - Commands (excluded): ${filterReasons.commandMessage}
-  - System messages (excluded): ${filterReasons.systemMessage}
-  - Empty messages (excluded): ${filterReasons.emptyMessage}`);
-
-            // Format valid messages
-            const formatted = filtered.map(msg => ({
-                authorId: msg.author.id,
-                authorName: msg.author.username,
-                content: msg.content || this._extractEmbedContent(msg),
-                timestamp: msg.createdAt.getTime(),
-                attachments: msg.attachments.map(a => ({
-                    url: a.url,
-                    name: a.name,
-                    size: a.size
-                })),
-                embeds: msg.embeds.length > 0 ? msg.embeds.length : 0
-            }));
-
-            console.log(`[ConversationCollector] Formatted ${formatted.length} messages for LLM`);
-            return formatted;
+            return this._processRawMessages(Array.from(messages.values()));
         } catch (error) {
             console.error('[ConversationCollector] Failed to collect messages:', error);
             return [];

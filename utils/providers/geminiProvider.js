@@ -19,11 +19,12 @@ class GeminiProvider {
      * @param {string} systemPrompt - System instruction for the model
      * @param {string} userMessage - User message/question
      * @param {Object} options - Configuration options
+     * @param {number} attempt - Current retry attempt
      * @returns {Promise<string>} Model response text
      */
-    async chat(systemPrompt, userMessage, options = {}) {
-        const model = options.model || 'gemini-1.5-flash';
-        const timeout = options.timeout || 30000;
+    async chat(systemPrompt, userMessage, options = {}, attempt = 0) {
+        const model = options.model || 'gemini-2.0-flash';
+        const timeout = options.timeout || 60000;
 
         try {
             const generativeModel = this.client.getGenerativeModel({
@@ -50,12 +51,17 @@ class GeminiProvider {
             return text;
         } catch (error) {
             // Handle specific Gemini errors
-            if (error.message.includes('429')) {
+            const errorMessage = error.message || '';
+            const isRateLimit = errorMessage.includes('429') || 
+                               errorMessage.includes('too many') || 
+                               errorMessage.includes('Rate limit');
+
+            if (isRateLimit && attempt < this.retryAttempts) {
                 // Rate limited - use exponential backoff
-                return this._retryWithBackoff(systemPrompt, userMessage, options, 0);
+                return this._retryWithBackoff(systemPrompt, userMessage, options, attempt);
             }
 
-            console.error(`[GeminiProvider] Error: ${error.message}`);
+            console.error(`[GeminiProvider] Error: ${errorMessage}`);
             throw error;
         }
     }
@@ -65,23 +71,12 @@ class GeminiProvider {
      * @private
      */
     async _retryWithBackoff(systemPrompt, userMessage, options, attempt) {
-        if (attempt >= this.retryAttempts) {
-            throw new Error(`Max retries (${this.retryAttempts}) exceeded for rate limit`);
-        }
-
         const delayMs = this.retryDelay * Math.pow(2, attempt);
-        console.log(`[GeminiProvider] Rate limited, retrying in ${delayMs}ms (attempt ${attempt + 1})`);
+        console.log(`[GeminiProvider] Rate limited, retrying in ${delayMs}ms (attempt ${attempt + 1}/${this.retryAttempts})`);
 
         await new Promise(resolve => setTimeout(resolve, delayMs));
 
-        try {
-            return await this.chat(systemPrompt, userMessage, options);
-        } catch (error) {
-            if (error.message.includes('429') || error.message.includes('too many')) {
-                return this._retryWithBackoff(systemPrompt, userMessage, options, attempt + 1);
-            }
-            throw error;
-        }
+        return this.chat(systemPrompt, userMessage, options, attempt + 1);
     }
 
     /**
@@ -98,7 +93,7 @@ class GeminiProvider {
      */
     async testConnection() {
         try {
-            const model = this.client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            const model = this.client.getGenerativeModel({ model: 'gemini-2.0-flash' });
             await model.generateContent('test');
             return true;
         } catch (error) {
@@ -115,7 +110,7 @@ class GeminiProvider {
      * @returns {Promise<number>} Total token count
      */
     async countTokens(systemPrompt, userMessage, options = {}) {
-        const modelName = options.model || 'gemini-1.5-flash';
+        const modelName = options.model || 'gemini-2.0-flash';
         
         try {
             const model = this.client.getGenerativeModel({ model: modelName });

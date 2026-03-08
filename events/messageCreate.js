@@ -19,13 +19,6 @@ module.exports = {
     // 1. 處理活躍聊天管理
     activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
 
-    // 1b. 如果偵測到熱門頻道，觸發 LLM 討論摘要檢查
-    try {
-      await llmSummaryManager.handleHotChannel(message.channel, message.client);
-    } catch (err) {
-      console.error("LLMSummary Error:", err);
-    }
-
     // 2. 執行每日數據統計
     try {
       statsHandler.trackMessageStats(message);

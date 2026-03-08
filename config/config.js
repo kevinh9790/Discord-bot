@@ -60,8 +60,9 @@ module.exports = {
       claude: process.env.ANTHROPIC_API_KEY,
     },
     models: {
-      relevanceCheck: 'gemini-3-flash-preview',  // Fast, cheap model
-      fullSummary: 'gemini-3-flash-preview',       // High quality model
+      relevanceCheck: 'gemini-3-flash-preview',
+      fullSummary: 'gemini-3-flash-preview',
+      topicDiscovery: 'gemini-3-flash-preview',
     },
     channels: {
       adminApproval: process.env.LLM_ADMIN_APPROVAL_CHANNEL,
@@ -72,6 +73,8 @@ module.exports = {
       minMessages: parseInt(process.env.LLM_MIN_MESSAGES || '10'),
       lookbackWindow: parseInt(process.env.LLM_LOOKBACK_WINDOW || '100'),
       relevanceThreshold: 0.7,
+      maturationDays: 3,
+      scanLimitDays: 7,
     },
     rateLimits: {
       maxRequestsPerHour: 10,
