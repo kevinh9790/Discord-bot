@@ -1,5 +1,4 @@
 const cron = require('node-cron');
-const llmSummaryManager = require('../utils/llmSummaryManager');
 const log = require('../utils/logger');
 
 module.exports = {
@@ -11,7 +10,7 @@ module.exports = {
         cron.schedule('0 0 4 * * *', async () => {
             try {
                 await log(client, '🔍 開始執行 LLM 每日回顧掃描...');
-                await llmSummaryManager.performDailyScan(client);
+                await client.llmSummaryManager.performDailyScan(client);
                 await log(client, '✅ LLM 每日回顧掃描完成');
             } catch (error) {
                 console.error('[LLMSummaryJob] Error:', error);
