@@ -25,6 +25,10 @@ class GeminiProvider {
     async chat(systemPrompt, userMessage, options = {}, attempt = 0) {
         const model = options.model || 'gemini-2.0-flash';
         const timeout = options.timeout || 60000;
+        const responseMimeType = options.responseMimeType || 'text/plain';
+        const responseSchema = options.responseSchema || undefined;
+        const maxOutputTokens = options.maxOutputTokens || 2048;
+        const thinkingBudget = options.thinkingBudget;
 
         try {
             const generativeModel = this.client.getGenerativeModel({
@@ -34,8 +38,10 @@ class GeminiProvider {
                     temperature: 0.7,
                     topP: 0.95,
                     topK: 64,
-                    maxOutputTokens: 2048,
-                    responseMimeType: 'text/plain'
+                    maxOutputTokens,
+                    responseMimeType,
+                    ...(responseSchema && { responseSchema }),
+                    ...(thinkingBudget !== undefined && { thinkingConfig: { thinkingBudget } })
                 }
             });
 
@@ -47,6 +53,11 @@ class GeminiProvider {
                 )
             ]);
 
+            const candidate = response.response.candidates?.[0];
+            const finishReason = candidate?.finishReason;
+            if (finishReason && finishReason !== 'STOP') {
+                console.warn(`[GeminiProvider] Unexpected finishReason: ${finishReason}`);
+            }
             const text = response.response.text();
             return text;
         } catch (error) {

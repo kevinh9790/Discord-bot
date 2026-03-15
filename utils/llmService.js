@@ -58,14 +58,6 @@ function createProvider(providerName, apiKey) {
     switch (providerName.toLowerCase()) {
         case 'gemini':
             return new GeminiProvider(apiKey);
-        case 'openai':
-            // Future: return new OpenAIProvider(apiKey);
-            console.warn('[LLMService] OpenAI provider not yet implemented');
-            return null;
-        case 'claude':
-            // Future: return new ClaudeProvider(apiKey);
-            console.warn('[LLMService] Claude provider not yet implemented');
-            return null;
         default:
             console.error(`[LLMService] Unknown provider: ${providerName}`);
             return null;
@@ -269,7 +261,7 @@ module.exports = {
      * @param {Array} messages - 格式化後的訊息陣列
      * @returns {Promise<Array>} 討論主題聚類列表
      */
-    async discoverTopics(messages) {
+    async discoverTopics(messages, options = {}) {
         try {
             if (!currentProvider) {
                 if (!initialize()) {
@@ -323,14 +315,41 @@ module.exports = {
                 userMessage,
                 {
                     model: llmConfig.models?.topicDiscovery || 'gemini-2.0-flash',
-                    timeout: llmConfig.timeouts?.llmRequestTimeout || 60000
+                    timeout: options.timeout ?? llmConfig.timeouts?.llmRequestTimeout ?? 60000,
+                    responseMimeType: 'application/json',
+                    maxOutputTokens: Math.max(8192, messages.length * 30),
+                    thinkingBudget: 0,
+                    responseSchema: {
+                        type: 'object',
+                        properties: {
+                            clusters: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        topic:      { type: 'string' },
+                                        messageIds: { type: 'array', items: { type: 'string' } },
+                                        isRelevant: { type: 'boolean' },
+                                        confidence: { type: 'number' },
+                                        category:   { type: 'string', enum: ['technics', 'art', 'design', 'news', 'resource', 'other'] },
+                                        reason:     { type: 'string' }
+                                    },
+                                    required: ['topic', 'messageIds', 'isRelevant', 'confidence', 'category', 'reason']
+                                }
+                            }
+                        },
+                        required: ['clusters']
+                    }
                 }
             );
 
-            const jsonMatch = response.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-            if (!jsonMatch) throw new Error('Failed to parse clusters JSON');
-
-            const result = JSON.parse(jsonMatch[0]);
+            let result;
+            try {
+                result = JSON.parse(response);
+            } catch (parseError) {
+                console.error('[LLMService] JSON parse failed. Raw response (first 500 chars):', response?.slice(0, 500));
+                throw parseError;
+            }
             return result.clusters || result || [];
         } catch (error) {
             console.error('[LLMService] Topic discovery failed:', error);
