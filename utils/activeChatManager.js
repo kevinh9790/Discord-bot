@@ -207,7 +207,7 @@ async function sendNotification(guild, activeChannel) {
         saveState(); // Save cooldown
 
         await notifyChannel.send({
-            content: `<#${activeChannel.id}> 現在討論得很熱烈 🔥，趕快去看看吧！`
+            //content: `<#${activeChannel.id}> 現在討論得很熱烈 🔥，趕快去看看吧！`
         });
     } catch (error) {
         console.error("發送活躍通知失敗:", error);

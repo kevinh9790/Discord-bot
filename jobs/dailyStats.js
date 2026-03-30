@@ -106,6 +106,7 @@ module.exports = {
                 // ==========================================
                 //#region 🏆 報表 2：主頻道 - 活躍度排行榜 (積分制)
                 // ==========================================
+                /*
                 if (leaderboardChannel) {
                     // 文字積分排名 (取前 10)
                     const msgRank = allStats
@@ -159,6 +160,7 @@ module.exports = {
                         allowedMentions: { parse: ['users'] } // 確保可以 Tag 到人
                     });
                 }
+                */
 
                 await log(client, '✅ 自動日報發送成功！');
                 //#endregion
