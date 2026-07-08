@@ -86,6 +86,14 @@ module.exports = {
     prompts: {
       relevanceCheck: './config/prompts/relevanceCheck.txt',
       comprehensiveSummary: './config/prompts/comprehensiveSummary.txt',
+    },
+    dailyUnconditional: {
+      enabled: process.env.LLM_DAILY_SUMMARY_ENABLED === 'true',
+      cron: process.env.LLM_DAILY_SUMMARY_CRON || '0 0 5 * * *',
+      minMessages: parseInt(process.env.LLM_DAILY_SUMMARY_MIN_MESSAGES || '10'),
+      channels: process.env.LLM_DAILY_SUMMARY_CHANNELS
+        ? process.env.LLM_DAILY_SUMMARY_CHANNELS.split(',')
+        : (process.env.LLM_CHANNEL_WHITELIST ? process.env.LLM_CHANNEL_WHITELIST.split(',') : [])
     }
   },
 
