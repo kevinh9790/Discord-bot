@@ -43,15 +43,9 @@ class GeminiProvider {
                     ...(responseSchema && { responseSchema }),
                     ...(thinkingBudget !== undefined && { thinkingConfig: { thinkingBudget } })
                 }
-            });
+            }, { timeout });
 
-            // Execute with timeout
-            const response = await Promise.race([
-                generativeModel.generateContent(userMessage),
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('LLM request timeout')), timeout)
-                )
-            ]);
+            const response = await generativeModel.generateContent(userMessage);
 
             const candidate = response.response.candidates?.[0];
             const finishReason = candidate?.finishReason;
