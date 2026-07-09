@@ -158,10 +158,9 @@ function getAvailablePresets() {
 /**
  * Prepare conversation messages with webhook format
  * @param {string} preset - Preset name
- * @param {number} count - Number of users (will validate against template)
  * @returns {Object} Prepared conversation with users and messages
  */
-function prepareConversation(preset = 'unity-technical', count = null) {
+function prepareConversation(preset = 'unity-technical') {
   const template = getTemplate(preset);
   if (!template) {
     throw new Error(`Unknown preset: ${preset}`);
@@ -185,7 +184,6 @@ function prepareConversation(preset = 'unity-technical', count = null) {
 function calculateDuration(messages) {
   if (!messages || messages.length === 0) return 0;
   const lastMessage = messages[messages.length - 1];
-  const firstMessage = messages[0];
   return (lastMessage.delay || 0) + 10; // +10s for last message send time
 }
 

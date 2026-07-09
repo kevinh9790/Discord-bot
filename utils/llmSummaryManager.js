@@ -227,7 +227,7 @@ function createLlmSummaryManager(storage) {
             }
         }
 
-        for (const [hour, count] of Object.entries(state.rateLimits.hourlyRequests)) {
+        for (const hour of Object.keys(state.rateLimits.hourlyRequests)) {
             if (parseInt(hour) < now - 60 * 60 * 1000) {
                 delete state.rateLimits.hourlyRequests[hour];
             }

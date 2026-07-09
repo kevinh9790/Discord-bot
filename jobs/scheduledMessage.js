@@ -177,7 +177,7 @@ module.exports = {
 
             cron.schedule(task.cronTime, async () => {
                 try {
-                    const { day, dayOfWeek, fullString } = getTaipeiInfo();
+                    const { day, dayOfWeek } = getTaipeiInfo();
 
                     if (task.skipDates && task.skipDates.includes(day)) {
                         await log(client, `🗓️ [${task.name}] 今天是 ${day} 號，觸發跳過機制。`);
