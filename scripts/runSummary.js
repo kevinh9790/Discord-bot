@@ -1,6 +1,9 @@
 require("dotenv").config();
+const path = require('path');
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
-const llmSummaryManager = require("../utils/llmSummaryManager.js");
+const { FileStorage } = require("../utils/storage.js");
+const { createLlmSummaryManager } = require("../utils/llmSummaryManager.js");
+const { runDailyScan } = require("../jobs/llmSummaryJob.js");
 
 async function run() {
   console.log("🚀 Starting one-shot LLM Summary Scan...");
@@ -16,13 +19,15 @@ async function run() {
 
   client.once("ready", async () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
-    
+
+    client.llmSummaryManager = createLlmSummaryManager(
+      new FileStorage(path.join(__dirname, '../data/llmSummaryState.json'))
+    );
+
     try {
-      await llmSummaryManager.performDailyScan(client);
-      console.log("✨ Summary scan completed successfully.");
-    } catch (error) {
-      console.error("❌ Summary scan failed:", error);
+      await runDailyScan(client);
     } finally {
+      client.llmSummaryManager._cleanup();
       console.log("👋 Closing client...");
       client.destroy();
       process.exit(0);

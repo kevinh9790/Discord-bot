@@ -1,11 +1,9 @@
-const activeChatManager = require("../utils/activeChatManager.js");
-const llmSummaryManager = require("../utils/llmSummaryManager.js");
 const statsHandler = require("../utils/statsHandler.js");
 const devLogHandler = require("../utils/devLogHandler.js");
 
 module.exports = {
   name: "messageCreate",
-  async execute(message) {
+  async execute(message, client) {
     // Debug: Log all messages to help troubleshoot collection issues
     const isWebhook = message.webhookId ? '🔗 [WEBHOOK]' : '👤 [USER]';
     const isBot = message.author.bot ? '🤖 [BOT]' : '✓';
@@ -17,7 +15,7 @@ module.exports = {
     }
 
     // 1. 處理活躍聊天管理
-    activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
+    client.activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
 
     // 2. 執行每日數據統計
     try {

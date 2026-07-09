@@ -1,4 +1,8 @@
+const path = require('path');
 const config = require('../config/config.js');
+const { FileStorage } = require('../utils/storage');
+const { createActiveChatManager } = require('../utils/activeChatManager');
+const { createLlmSummaryManager } = require('../utils/llmSummaryManager');
 
 module.exports = {
     name: 'ready',
@@ -10,6 +14,14 @@ module.exports = {
         // 將設定掛載到 client 以便其他檔案讀取
         client.filterConfig = config.FILTERS;
         client.filterConfig.TARGET_GUILD_ID = config.TARGET_GUILD_ID;
+
+        // 初始化管理器實例並掛載到 client
+        client.activeChatManager = createActiveChatManager(
+            new FileStorage(path.join(__dirname, '../data/activeChatState.json'))
+        );
+        client.llmSummaryManager = createLlmSummaryManager(
+            new FileStorage(path.join(__dirname, '../data/llmSummaryState.json'))
+        );
 
         //#region 設定邀請連結
         client.inviteUses = new Map();
@@ -26,11 +38,6 @@ module.exports = {
         //#endregion
 
         // 1. 初始化數據結構
-        // msgPoints: 文字活躍積分
-        // voicePoints: 語音活躍積分
-        // msgCount: 訊息數 (統計用)
-        // voiceMs: 語音時長 (統計用)
-        // maxUsers: 語音同時最高人數 (統計用)
         client.dailyStats = {
             channels: {}, // { id: { name, msgCount, voiceMs, msgPoints, voicePoints, maxUsers } }
             mostReacted: {

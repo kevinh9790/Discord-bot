@@ -12,7 +12,6 @@
     AttachmentBuilder
 } = require('discord.js');
 const config = require('../config/config.js');
-const llmSummaryManager = require('../utils/llmSummaryManager.js');
 
 const SUGGESTION_CHANNEL_ID = config.CHANNELS.SUGGESTION;
 const TICKET_LOG_CHANNEL_ID = config.CHANNELS.TICKET_LOG;
@@ -30,7 +29,7 @@ module.exports = {
 
             try {
                 const summaryId = interaction.customId.replace('summary_approve_', '');
-                const summary = llmSummaryManager.getPendingSummary(summaryId);
+                const summary = client.llmSummaryManager.getPendingSummary(summaryId);
 
                 if (!summary) {
                     return await interaction.editReply({
@@ -42,7 +41,7 @@ module.exports = {
                     content: '⏳ 正在生成完整摘要...'
                 });
 
-                await llmSummaryManager.generateFullSummary(summaryId, client);
+                await client.llmSummaryManager.generateFullSummary(summaryId, client);
 
                 await interaction.editReply({
                     content: '✅ 摘要已生成並發佈到摘要頻道'
@@ -61,7 +60,7 @@ module.exports = {
 
             try {
                 const summaryId = interaction.customId.replace('summary_reject_', '');
-                await llmSummaryManager.rejectSummary(summaryId);
+                await client.llmSummaryManager.rejectSummary(summaryId);
 
                 await interaction.editReply({
                     content: '✅ 已忽略此摘要'
