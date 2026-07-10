@@ -217,7 +217,7 @@ class LoadGenerator {
             const message = await channel.messages.fetch(msgInfo.id);
             await message.delete();
             await this.delay(100); // Rate limit protection
-          } catch (err) {
+          } catch {
             // Message may already be deleted or inaccessible, continue
           }
         }
@@ -231,7 +231,7 @@ class LoadGenerator {
             const w = await channel.client.fetchWebhook(webhook.id, webhook.token);
             await w.delete();
             await this.delay(200); // Rate limit protection
-          } catch (err) {
+          } catch {
             // Webhook may already be deleted, continue
           }
         }
@@ -287,48 +287,44 @@ class LoadGenerator {
       progressCallback
     } = options;
 
-    try {
-      // 1. Validate channel
-      this.validateChannel(channel);
+    // 1. Validate channel
+    this.validateChannel(channel);
 
-      // 2. Get conversation template
-      const conversation = templates.prepareConversation(preset);
+    // 2. Get conversation template
+    const conversation = templates.prepareConversation(preset);
 
-      // 3. Validate user count
-      if (users < 2 || users > config.LOAD_TEST.maxUsers) {
-        throw new Error(`❌ 使用者數量必須介於 2 到 ${config.LOAD_TEST.maxUsers} 之間`);
-      }
-
-      // 4. Validate message count
-      if (conversation.messages.length > config.LOAD_TEST.maxMessages) {
-        throw new Error(`❌ 此預設對話有 ${conversation.messages.length} 則訊息，超過上限 ${config.LOAD_TEST.maxMessages}`);
-      }
-
-      // 5. Limit users to available in template
-      const activeUsers = conversation.users.slice(0, Math.min(users, conversation.users.length));
-
-      // 6. Create webhooks
-      const webhooks = await this.createWebhooks(channel, activeUsers);
-
-      // 7. Send messages
-      await this.sendMessages(channel, conversation, rate, progressCallback);
-
-      // 8. Calculate stats
-      const stats = this.getStats();
-
-      // 9. Return success result
-      return {
-        success: true,
-        preset,
-        category: conversation.category,
-        stats,
-        webhooksCreated: webhooks.length,
-        messagesSent: this.messageIds.length,
-        estimatedTrigger: this.estimateLLMTrigger(this.messageIds.length, webhooks.length)
-      };
-    } catch (error) {
-      throw error;
+    // 3. Validate user count
+    if (users < 2 || users > config.LOAD_TEST.maxUsers) {
+      throw new Error(`❌ 使用者數量必須介於 2 到 ${config.LOAD_TEST.maxUsers} 之間`);
     }
+
+    // 4. Validate message count
+    if (conversation.messages.length > config.LOAD_TEST.maxMessages) {
+      throw new Error(`❌ 此預設對話有 ${conversation.messages.length} 則訊息，超過上限 ${config.LOAD_TEST.maxMessages}`);
+    }
+
+    // 5. Limit users to available in template
+    const activeUsers = conversation.users.slice(0, Math.min(users, conversation.users.length));
+
+    // 6. Create webhooks
+    const webhooks = await this.createWebhooks(channel, activeUsers);
+
+    // 7. Send messages
+    await this.sendMessages(channel, conversation, rate, progressCallback);
+
+    // 8. Calculate stats
+    const stats = this.getStats();
+
+    // 9. Return success result
+    return {
+      success: true,
+      preset,
+      category: conversation.category,
+      stats,
+      webhooksCreated: webhooks.length,
+      messagesSent: this.messageIds.length,
+      estimatedTrigger: this.estimateLLMTrigger(this.messageIds.length, webhooks.length)
+    };
   }
 
   /**

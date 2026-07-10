@@ -70,7 +70,7 @@ function createProvider(providerName, apiKey) {
  * @param {Object} options - Optional settings
  * @returns {Promise<Object>} Result with {isRelevant, confidence, category, reason}
  */
-async function quickRelevanceCheck(messages, options = {}) {
+async function quickRelevanceCheck(messages, _options = {}) {
     try {
         if (!currentProvider) {
             if (!initialize()) {
