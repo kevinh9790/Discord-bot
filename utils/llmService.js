@@ -58,14 +58,6 @@ function createProvider(providerName, apiKey) {
     switch (providerName.toLowerCase()) {
         case 'gemini':
             return new GeminiProvider(apiKey);
-        case 'openai':
-            // Future: return new OpenAIProvider(apiKey);
-            console.warn('[LLMService] OpenAI provider not yet implemented');
-            return null;
-        case 'claude':
-            // Future: return new ClaudeProvider(apiKey);
-            console.warn('[LLMService] Claude provider not yet implemented');
-            return null;
         default:
             console.error(`[LLMService] Unknown provider: ${providerName}`);
             return null;
@@ -78,7 +70,7 @@ function createProvider(providerName, apiKey) {
  * @param {Object} options - Optional settings
  * @returns {Promise<Object>} Result with {isRelevant, confidence, category, reason}
  */
-async function quickRelevanceCheck(messages, options = {}) {
+async function quickRelevanceCheck(messages, _options = {}) {
     try {
         if (!currentProvider) {
             if (!initialize()) {
@@ -158,12 +150,14 @@ async function quickRelevanceCheck(messages, options = {}) {
 }
 
 /**
- * Generate comprehensive summary of conversation
+ * Generate comprehensive summary or daily digest of conversation
  * @param {Array} messages - Formatted messages array
- * @param {Object} options - Optional settings
+ * @param {Object} options - Optional settings (e.g. { promptType: 'comprehensive' | 'daily', timeout: number })
  * @returns {Promise<Object>} Summary with {title, summary, keyPoints, participants, resources, actionItems}
  */
 async function generateSummary(messages, options = {}) {
+    const promptType = options.promptType || 'comprehensive';
+    const isDaily = promptType === 'daily';
     try {
         if (!currentProvider) {
             if (!initialize()) {
@@ -175,32 +169,49 @@ async function generateSummary(messages, options = {}) {
         const formattedMessages = require('./conversationCollector.js').formatForLLM(messages);
         const stats = require('./conversationCollector.js').getStatistics(messages);
 
-        // Read comprehensive summary prompt
+        // Read appropriate prompt
         const fs = require('fs');
         const path = require('path');
-        const promptPath = path.join(__dirname, '../config/prompts/comprehensiveSummary.txt');
+        const promptFilename = isDaily ? 'dailyDigest.txt' : 'comprehensiveSummary.txt';
+        const promptPath = path.join(__dirname, `../config/prompts/${promptFilename}`);
         const systemPrompt = fs.readFileSync(promptPath, 'utf8');
 
-        const userMessage = `請為以下討論對話生成完整摘要：\n\n${formattedMessages}\n\n對話統計:\n- 訊息數: ${messages.length}\n- 參與者: ${stats.uniqueAuthors}人\n- 總字數: ${stats.totalWords}`;
+        const userMessagePrefix = isDaily 
+            ? '請為以下 24 小時的對話對話生成每日摘要：' 
+            : '請為以下討論對話生成完整摘要：';
+        const userMessage = `${userMessagePrefix}\n\n${formattedMessages}\n\n對話統計:\n- 訊息數: ${messages.length}\n- 參與者: ${stats.uniqueAuthors}人\n- 總字數: ${stats.totalWords}`;
 
         // Token Counting & Dry Run
         const tokenCount = await currentProvider.countTokens(systemPrompt, userMessage, {
             model: llmConfig.models?.fullSummary || 'gemini-2.0-flash'
         });
 
-        console.log(`[LLM Token Cost] Full Summary: ${tokenCount} tokens | Est. Cost: $${(tokenCount / 1000000 * 0.35).toFixed(6)} (Flash)`);
+        const logLabel = isDaily ? 'Daily Digest' : 'Full Summary';
+        console.log(`[LLM Token Cost] ${logLabel}: ${tokenCount} tokens | Est. Cost: $${(tokenCount / 1000000 * 0.35).toFixed(6)} (Flash)`);
 
         if (llmConfig.dryRun) {
-            console.log('[LLM Dry Run] Skipping actual API call for summary generation.');
-            return {
-                title: 'Dry Run Summary Mode',
-                summary: '這是一個測試摘要。在 Dry Run 模式下，我們計算了 Token 數量但沒有發送請求給 LLM。實際運作時，這裡會顯示根據對話內容生成的完整摘要。',
-                keyPoints: ['Token 計算功能正常運作', '未產生 API 費用', '流程測試通過'],
-                participants: ['TestUser1', 'TestUser2'],
-                resources: ['https://example.com/resource'],
-                actionItems: ['Check logs for token count'],
-                tokenCount: tokenCount
-            };
+            console.log(`[LLM Dry Run] Skipping actual API call for ${logLabel.toLowerCase()} generation.`);
+            if (isDaily) {
+                return {
+                    title: '每日對話精選 (Dry Run)',
+                    summary: '這是一個測試每日摘要。在 Dry Run 模式下，我們計算了 Token 數量但沒有發送請求給 LLM。實際運作時，這裡會顯示過去 24 小時對話內容生成的每日摘要。',
+                    keyPoints: ['每日 Token 計算功能正常', '無 API 費用產生', '每日掃描排程測試通過'],
+                    participants: ['TestUser1', 'TestUser2'],
+                    resources: ['https://example.com/resource'],
+                    actionItems: ['Check dry run logs'],
+                    tokenCount: tokenCount
+                };
+            } else {
+                return {
+                    title: 'Dry Run Summary Mode',
+                    summary: '這是一個測試摘要。在 Dry Run 模式下，我們計算了 Token 數量但沒有發送請求給 LLM。實際運作時，這裡會顯示根據對話內容生成的完整摘要。',
+                    keyPoints: ['Token 計算功能正常運作', '未產生 API 費用', '流程測試通過'],
+                    participants: ['TestUser1', 'TestUser2'],
+                    resources: ['https://example.com/resource'],
+                    actionItems: ['Check logs for token count'],
+                    tokenCount: tokenCount
+                };
+            }
         }
 
         const response = await currentProvider.chat(
@@ -208,16 +219,16 @@ async function generateSummary(messages, options = {}) {
             userMessage,
             {
                 model: llmConfig.models?.fullSummary || 'gemini-2.0-flash',
-                timeout: llmConfig.timeouts?.llmRequestTimeout || 30000
+                timeout: options.timeout || llmConfig.timeouts?.llmRequestTimeout || 30000
             }
         );
 
         // Parse JSON response
         const jsonMatch = response.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
         if (!jsonMatch) {
-            console.error('[LLMService] Failed to extract JSON from summary response');
+            console.error(`[LLMService] Failed to extract JSON from ${logLabel.toLowerCase()} response`);
             return {
-                title: '摘要生成失敗',
+                title: isDaily ? '每日摘要生成失敗' : '摘要生成失敗',
                 summary: '無法從LLM獲取回應',
                 keyPoints: [],
                 participants: [],
@@ -229,7 +240,7 @@ async function generateSummary(messages, options = {}) {
 
         const result = JSON.parse(jsonMatch[0]);
         return {
-            title: result.title || '未命名',
+            title: result.title || (isDaily ? '今日討論精選' : '未命名'),
             summary: result.summary || '',
             keyPoints: result.keyPoints || [],
             participants: result.participants || [],
@@ -238,9 +249,9 @@ async function generateSummary(messages, options = {}) {
             tokenCount: tokenCount
         };
     } catch (error) {
-        console.error('[LLMService] Summary generation failed:', error);
+        console.error(`[LLMService] ${isDaily ? 'Daily digest' : 'Summary'} generation failed:`, error);
         return {
-            title: '摘要生成失敗',
+            title: isDaily ? '每日摘要生成失敗' : '摘要生成失敗',
             summary: `錯誤: ${error.message}`,
             keyPoints: [],
             participants: [],
@@ -269,7 +280,7 @@ module.exports = {
      * @param {Array} messages - 格式化後的訊息陣列
      * @returns {Promise<Array>} 討論主題聚類列表
      */
-    async discoverTopics(messages) {
+    async discoverTopics(messages, options = {}) {
         try {
             if (!currentProvider) {
                 if (!initialize()) {
@@ -323,14 +334,41 @@ module.exports = {
                 userMessage,
                 {
                     model: llmConfig.models?.topicDiscovery || 'gemini-2.0-flash',
-                    timeout: llmConfig.timeouts?.llmRequestTimeout || 60000
+                    timeout: options.timeout ?? llmConfig.timeouts?.llmRequestTimeout ?? 60000,
+                    responseMimeType: 'application/json',
+                    maxOutputTokens: Math.max(8192, messages.length * 30),
+                    thinkingBudget: 0,
+                    responseSchema: {
+                        type: 'object',
+                        properties: {
+                            clusters: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        topic:      { type: 'string' },
+                                        messageIds: { type: 'array', items: { type: 'string' } },
+                                        isRelevant: { type: 'boolean' },
+                                        confidence: { type: 'number' },
+                                        category:   { type: 'string', enum: ['technics', 'art', 'design', 'news', 'resource', 'other'] },
+                                        reason:     { type: 'string' }
+                                    },
+                                    required: ['topic', 'messageIds', 'isRelevant', 'confidence', 'category', 'reason']
+                                }
+                            }
+                        },
+                        required: ['clusters']
+                    }
                 }
             );
 
-            const jsonMatch = response.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-            if (!jsonMatch) throw new Error('Failed to parse clusters JSON');
-
-            const result = JSON.parse(jsonMatch[0]);
+            let result;
+            try {
+                result = JSON.parse(response);
+            } catch (parseError) {
+                console.error('[LLMService] JSON parse failed. Raw response (first 500 chars):', response?.slice(0, 500));
+                throw parseError;
+            }
             return result.clusters || result || [];
         } catch (error) {
             console.error('[LLMService] Topic discovery failed:', error);

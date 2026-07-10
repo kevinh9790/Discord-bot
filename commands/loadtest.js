@@ -154,12 +154,13 @@ function parseArguments(args) {
         defaults.cleanup = value.toLowerCase() === 'true';
         break;
       case 'users':
-      case 'user':
+      case 'user': {
         const userCount = parseInt(value);
         if (!isNaN(userCount) && userCount >= 2 && userCount <= 8) {
           defaults.users = userCount;
         }
         break;
+      }
 
       case 'rate':
       case 'speed':
@@ -175,12 +176,13 @@ function parseArguments(args) {
         break;
 
       case 'messages':
-      case 'msg':
+      case 'msg': {
         const msgCount = parseInt(value);
         if (!isNaN(msgCount) && msgCount > 0) {
           defaults.messages = msgCount;
         }
         break;
+      }
     }
   }
 

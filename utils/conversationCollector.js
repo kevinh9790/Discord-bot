@@ -3,8 +3,6 @@
  * Collects and formats conversation messages for LLM processing
  */
 
-const config = require('../config/config.js');
-
 module.exports = {
     /**
      * 從指定頻道收集特定時間窗口內的訊息
