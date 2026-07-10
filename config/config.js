@@ -39,6 +39,7 @@ module.exports = {
 
   // Active Chat Manager
   ACTIVE_CHAT: {
+    ENABLED: process.env.ACTIVE_CHAT_ENABLED !== 'false',
     IGNORED_CATEGORIES: [],
     // rule1: 3人(含)以上 60分鐘內 10則訊息
     RULE1: { minUsers: 3, minMsgs: 10, duration: 60 * 60 * 1000, maxContribution: 2 },

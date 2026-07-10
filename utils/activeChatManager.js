@@ -2,6 +2,7 @@
 const config = require('../config/config.js');
 
 const CONFIG = {
+    enabled: config.ACTIVE_CHAT.ENABLED,
     targetGuildId: config.TARGET_GUILD_ID,
     notificationChannelId: config.CHANNELS.LEADERBOARD,
     ignoredCategories: config.ACTIVE_CHAT.IGNORED_CATEGORIES,
@@ -100,6 +101,10 @@ function createActiveChatManager(storage) {
 
     return {
         async handleMessage(message) {
+            if (!CONFIG.enabled) {
+                return;
+            }
+
             const isWebhook = message.webhookId ? '🔗 WEBHOOK' : 'USER';
             console.log(`[ActiveChat] Handling ${isWebhook} @${message.author.username} in #${message.channel.name}`);
 
