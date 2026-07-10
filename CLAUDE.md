@@ -43,7 +43,7 @@ An Express server runs on port 8080 for health checks and self-ping keep-alive o
 
 Single source of truth for all constants: Discord channel IDs, active-chat detection rules, LLM settings (min messages, lookback window, relevance threshold, rate limits, maturation period). Read this file before modifying any feature settings.
 
-Environment variables (see `.env.example`) control token, channel IDs, and feature flags like `LLM_SUMMARY_ENABLED` and `LLM_DRY_RUN`.
+Environment variables (see `.env.example`) control token, channel IDs, and feature flags like `LLM_SUMMARY_ENABLED`, `LLM_DRY_RUN`, and `ACTIVE_CHAT_ENABLED`.
 
 ### LLM Summarization Pipeline
 
