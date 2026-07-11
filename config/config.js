@@ -37,6 +37,11 @@ module.exports = {
 
   TRIGGER_PREFIX: "開發進度",
 
+  // Daily Stats Job
+  DAILY_STATS: {
+    ENABLED: process.env.DAILY_STATS_ENABLED !== 'false',
+  },
+
   // Active Chat Manager
   ACTIVE_CHAT: {
     ENABLED: process.env.ACTIVE_CHAT_ENABLED !== 'false',
