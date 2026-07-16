@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { getConflictingGroups } = require('../utils/scheduleGroupRules');
 
 const channelsFilePath = path.join(__dirname, '../config/scheduledChannels.json');
 
@@ -90,6 +91,21 @@ module.exports = {
                 return cId !== targetChannelId;
             });
 
+            const removedGroups = [];
+            for (const conflictGroup of getConflictingGroups(groupName)) {
+                if (!Array.isArray(data[conflictGroup])) continue;
+
+                const originalConflictLength = data[conflictGroup].length;
+                data[conflictGroup] = data[conflictGroup].filter(item => {
+                    const cId = typeof item === 'string' ? item : item.channelId;
+                    return cId !== targetChannelId;
+                });
+
+                if (data[conflictGroup].length !== originalConflictLength) {
+                    removedGroups.push(conflictGroup);
+                }
+            }
+
             const newEntry = {
                 channelId: targetChannelId,
                 mentionUserId: targetUserId // 如果沒指定就是 null
@@ -100,6 +116,9 @@ module.exports = {
             let replyMsg = `✅ 已成功設定推播 **${groupName}**！\n📺 目標頻道：${targetChannelName}`;
             if (targetUserId) {
                 replyMsg += `\n👤 綁定通知：${targetUserName} (${targetUserId})`;
+            }
+            if (removedGroups.length > 0) {
+                replyMsg += `\n⚠️ 已自動從互斥群組移除：${removedGroups.join(', ')}`;
             }
             return message.reply(replyMsg);
         }

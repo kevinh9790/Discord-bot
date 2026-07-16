@@ -3,8 +3,16 @@ const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const log = require('../utils/logger');
+const {
+    getChannelIdsFromGroups,
+    normalizeScheduleList
+} = require('../utils/scheduleGroupRules');
 
 const channelsFilePath = path.join(__dirname, '../config/scheduledChannels.json');
+const deliveryConflictMap = {
+    half_monthly: ['Monday'],
+    '18half_monthly': ['18Monday']
+};
 
 // 輔助函數：取得台北時間的詳細資訊
 function getTaipeiInfo() {
@@ -21,30 +29,38 @@ function getTaipeiInfo() {
     };
 }
 
-// 輔助函數：讀取指定群組的頻道列表
-async function getScheduledChannels(client, groupName) {
-    if (!fs.existsSync(channelsFilePath)) return [];
+// 輔助函數：讀取完整設定檔
+async function readScheduledChannelData(client) {
+    if (!fs.existsSync(channelsFilePath)) return {};
 
     try {
         const fileContent = fs.readFileSync(channelsFilePath, 'utf8');
         const data = JSON.parse(fileContent);
-
-        const rawList = data[groupName];
-        if (!rawList) return [];
-
-        // 正規化：把舊的字串格式轉成新的物件格式，方便後續統一處理
-        // 舊: ["123"] -> 新: [{ channelId: "123", mentionUserId: null }]
-        return rawList.map(item => {
-            if (typeof item === 'string') {
-                return { channelId: item, mentionUserId: null };
-            }
-            return item; // 已經是物件就直接回傳
-        });
-
+        if (Array.isArray(data)) return {};
+        return data;
     } catch (err) {
         await log(client, `❌ [Debug] 讀取設定檔失敗: ${err.message}`, 'error');
-        return [];
+        return {};
     }
+}
+
+function getScheduledChannels(data, groupName) {
+    return normalizeScheduleList(data[groupName]);
+}
+
+function filterConflictingChannels(data, groupName, channelEntries) {
+    const conflictingChannelIds = getChannelIdsFromGroups(data, deliveryConflictMap[groupName] || []);
+
+    if (conflictingChannelIds.size === 0) {
+        return { filteredChannels: channelEntries, skippedCount: 0 };
+    }
+
+    const filteredChannels = channelEntries.filter(entry => !conflictingChannelIds.has(entry.channelId));
+
+    return {
+        filteredChannels,
+        skippedCount: channelEntries.length - filteredChannels.length
+    };
 }
 
 /*時間格式說明：秒 分 時 日 月 星期 (node-cron寫法會自動在最前面補0)
@@ -190,11 +206,28 @@ module.exports = {
 
                     await log(client, `🚀 執行定時任務: ${task.name} (群組: ${task.channelGroup})`);
 
-                    const currentChannels = await getScheduledChannels(client, task.channelGroup);
+                    const scheduledChannelData = await readScheduledChannelData(client);
+                    const currentChannels = getScheduledChannels(scheduledChannelData, task.channelGroup);
 
                     if (currentChannels.length === 0) return;
 
-                    for (const entry of currentChannels) {
+                    const { filteredChannels, skippedCount } = filterConflictingChannels(
+                        scheduledChannelData,
+                        task.channelGroup,
+                        currentChannels
+                    );
+
+                    if (skippedCount > 0) {
+                        await log(
+                            client,
+                            `⚠️ [${task.name}] 跳過 ${skippedCount} 個重複設定在互斥群組的頻道。`,
+                            'info'
+                        );
+                    }
+
+                    if (filteredChannels.length === 0) return;
+
+                    for (const entry of filteredChannels) {
                         // 解構取得 ID 和 綁定用戶
                         const { channelId, mentionUserId } = entry;
 
