@@ -1,5 +1,8 @@
 const devLogHandler = require('../../utils/devLogHandler');
 const { ChannelType } = require("discord.js");
+const log = require('../../utils/logger');
+
+jest.mock('../../utils/logger', () => jest.fn().mockResolvedValue(undefined));
 
 // Mock config
 jest.mock('../../config/config.js', () => ({
@@ -22,6 +25,7 @@ describe('Dev Log Handler', () => {
     let mockThread;
 
     beforeEach(() => {
+        log.mockClear();
         // Use a simple array with filter for threads to mimic Collection behavior used in the handler
         const threadsArray = []; 
         // We will push the mock thread into this array
@@ -48,6 +52,8 @@ describe('Dev Log Handler', () => {
         };
 
         mockMessage = {
+            client: {},
+            id: 'message-1',
             content: 'DevLog MyGame Update content',
             channel: { id: 'source-1' },
             author: { id: 'user-1', username: 'DevUser' },
@@ -63,6 +69,18 @@ describe('Dev Log Handler', () => {
             react: jest.fn(),
             reply: jest.fn()
         };
+    });
+
+    test('should send format and routing diagnostics to the Discord logger', async () => {
+        mockMessage.channel.id = '1442811186528911512';
+        mockMessage.content = 'DevLog';
+
+        await devLogHandler.handleDevLog(mockMessage);
+
+        expect(log).toHaveBeenCalledWith(mockMessage.client,
+            expect.stringContaining('來源頻道：1442811186528911512\n目標論壇：1230535700525486110'), 'info');
+        expect(log).toHaveBeenCalledWith(mockMessage.client,
+            expect.stringContaining('已回覆格式錯誤'), 'info');
     });
 
     test.each(['source-1', '1442811186528911512'])('should report format errors in %s even without a cached forum', async channelId => {
@@ -108,6 +126,8 @@ describe('Dev Log Handler', () => {
         try {
             await devLogHandler.handleDevLog(mockMessage);
             expect(mockMessage.reply).toHaveBeenCalledWith(expect.stringContaining('Missing Access'));
+            expect(log).toHaveBeenCalledWith(mockMessage.client,
+                expect.stringContaining('錯誤：Missing Access'), 'error');
             expect(mockThread.send).not.toHaveBeenCalled();
 
             mockMessage.reply.mockRejectedValue(new Error('Missing Permissions'));
@@ -115,6 +135,8 @@ describe('Dev Log Handler', () => {
             expect(errorLog).toHaveBeenCalledWith(
                 expect.stringContaining('無法回覆來源頻道'), expect.any(Error)
             );
+            expect(log).toHaveBeenCalledWith(mockMessage.client,
+                expect.stringContaining('無法回覆來源頻道'), 'error');
         } finally {
             errorLog.mockRestore();
         }

@@ -3,6 +3,7 @@ const config = require('../config/config.js');
 const { FileStorage } = require('../utils/storage');
 const { createActiveChatManager } = require('../utils/activeChatManager');
 const { createLlmSummaryManager } = require('../utils/llmSummaryManager');
+const log = require('../utils/logger');
 
 module.exports = {
     name: 'ready',
@@ -22,6 +23,8 @@ module.exports = {
         client.llmSummaryManager = createLlmSummaryManager(
             new FileStorage(path.join(__dirname, '../data/llmSummaryState.json'))
         );
+
+        await log(client, `[開發進度] 診斷紀錄已啟用（版本：1）\nBot：${client.user.tag}\n轉發設定：\n${config.DEV_LOG_GROUPS.map(group => `${group.sourceIds.join('、')} → ${group.targetId}`).join('\n')}`);
 
         //#region 設定邀請連結
         client.inviteUses = new Map();

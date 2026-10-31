@@ -1,5 +1,6 @@
 const { ChannelType } = require("discord.js");
 const config = require("../config/config.js");
+const log = require("./logger");
 
 const TRIGGER_PREFIX = config.TRIGGER_PREFIX;
 const DEV_LOG_GROUPS = config.DEV_LOG_GROUPS;
@@ -57,7 +58,7 @@ function getSimilarity(str1, str2) {
   }
 
 module.exports = {
-    async handleDevLog(message) {
+    async handleDevLog(message, client = message.client) {
         const currentGroup = DEV_LOG_GROUPS.find(group => group.sourceIds.includes(message.channel.id));
 
         if (!currentGroup || !message.content.startsWith(TRIGGER_PREFIX)) {
@@ -65,8 +66,13 @@ module.exports = {
         }
 
         const targetForumId = currentGroup.targetId;
+        const audit = async (status, detail = '', type = 'info') => {
+            if (!client) return;
+            await log(client, `[開發進度] ${status}\n來源頻道：${message.channel.id}\n目標論壇：${targetForumId}\n訊息 ID：${message.id}${detail ? `\n${detail}` : ''}`, type);
+        };
 
         try {
+            await audit('進入轉發處理');
             // 1. 解析內容：分離 [遊戲名稱] 與 [進度內容]
             // 移除前綴並去除前後空白
             const rawContent = message.content.slice(TRIGGER_PREFIX.length).trim();
@@ -93,21 +99,25 @@ module.exports = {
                 await message.reply({
                     content: `❌ **格式錯誤！**\n請依照格式輸入：\`${TRIGGER_PREFIX} [遊戲名稱] [進度內容]\`\n範例：\`${TRIGGER_PREFIX} 勇者鬥惡龍 今天畫了主角圖\``
                 });
+                await audit('已回覆格式錯誤');
                 return true;
             }
 
             // 檢查有沒有實質內容（至少要有文字或圖片）
             if (!logContent && attachmentFiles.length === 0) {
                 await message.reply("⚠️ 請輸入進度內容或上傳圖片喔！");
+                await audit('已提示補上進度內容或圖片');
                 return true;
             }
 
             // 格式正確後才查找論壇；快取未命中時向 Discord 查詢。
+            await audit('開始查找目標論壇');
             const forumChannel = message.guild.channels.cache.get(targetForumId)
                 || await message.guild.channels.fetch(targetForumId);
 
             if (!forumChannel || forumChannel.type !== ChannelType.GuildForum) {
                 console.error(`❌ [DevLog] 目標論壇不存在或類型不符：${targetForumId}`);
+                await audit('目標論壇不存在或類型不符', `頻道類型：${forumChannel?.type ?? '找不到頻道'}`, 'error');
                 await message.reply(`❌ 無法轉發：目標 <#${targetForumId}> 不存在或不是論壇頻道，請聯絡管理員確認設定。`);
                 return true;
             }
@@ -163,6 +173,7 @@ module.exports = {
 
                     } catch (err) {
                         console.error("❌ 無法抓取封存列表 (可能被 Rate Limit):", err);
+                        await audit('讀取封存貼文失敗', `錯誤：${err.message}`, 'error');
                     }
                 }
 
@@ -181,6 +192,7 @@ module.exports = {
                 await message.reply({
                     content: `❌ **找不到指定文章！**\n\n**請先前往 <#${targetForumId}> 建立一篇標題包含「${gameName}」的貼文後再試一次。**`
                 });
+                await audit('找不到發訊者的對應貼文');
                 return true;
             }
 
@@ -189,14 +201,17 @@ module.exports = {
                 content: logContent || `**${message.author.username} 更新了 ${gameName} 的進度：**`,
                 files: attachmentFiles
             });
+            await audit('轉發成功', `貼文 ID：${targetThread.id}`);
             await message.react("✅");
 
         } catch (err) {
             console.error(`❌ [DevLog] 轉發失敗：來源 ${message.channel.id}，目標 ${targetForumId}`, err);
+            await audit('處理失敗', `錯誤：${err.message}`, 'error');
             try {
                 await message.reply(`❌ 轉發失敗：${err.message}。請聯絡管理員確認 Bot 的頻道存取與發送權限。`);
             } catch (replyError) {
                 console.error(`❌ [DevLog] 無法回覆來源頻道：${message.channel.id}`, replyError);
+                await audit('無法回覆來源頻道', `錯誤：${replyError.message}`, 'error');
             }
         }
 

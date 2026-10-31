@@ -1,5 +1,7 @@
 const statsHandler = require("../utils/statsHandler.js");
 const devLogHandler = require("../utils/devLogHandler.js");
+const config = require("../config/config.js");
+const log = require("../utils/logger");
 
 module.exports = {
   name: "messageCreate",
@@ -14,8 +16,23 @@ module.exports = {
       return;
     }
 
-    // 1. 處理活躍聊天管理
-    client.activeChatManager.handleMessage(message).catch(err => console.error("ActiveChat Error:", err));
+    // 在其他處理器之前記錄，確認 Gateway 是否收到開發進度訊息。
+    const devLogGroup = config.DEV_LOG_GROUPS.find(group => group.sourceIds.includes(message.channel.id));
+    const diagnoseDevLog = message.content.includes(config.TRIGGER_PREFIX)
+      || (devLogGroup && !message.content);
+    if (diagnoseDevLog) {
+      const prefixMatches = message.content.startsWith(config.TRIGGER_PREFIX);
+      await log(client, `[開發進度] 收到訊息\n來源頻道：${message.channel.id}\n訊息 ID：${message.id}\n來源設定：${devLogGroup ? '符合' : '不符合'}\n指令開頭：${prefixMatches ? '符合' : message.content ? '不符合，請將開發進度放在最前面' : '內容為空，請檢查 Message Content Intent'}\n目標論壇：${devLogGroup?.targetId || '無'}`);
+    }
+
+    // 1. 處理活躍聊天管理，初始化或同步錯誤不得中斷開發進度指令。
+    try {
+      Promise.resolve(client.activeChatManager.handleMessage(message))
+        .catch(err => console.error("ActiveChat Error:", err));
+    } catch (err) {
+      console.error("ActiveChat Error:", err);
+      if (diagnoseDevLog) await log(client, `[開發進度] 活躍聊天處理失敗，繼續處理指令\n來源頻道：${message.channel.id}\n錯誤：${err.message}`, 'error');
+    }
 
     // 2. 執行每日數據統計
     try {
@@ -25,7 +42,7 @@ module.exports = {
     }
 
     // 3. 檢查是否為開發進度日誌 (如果是，這裡就會處理並回傳 true)
-    const isDevLog = await devLogHandler.handleDevLog(message);
+    const isDevLog = await devLogHandler.handleDevLog(message, client);
     if (isDevLog) return;
 
         // 4. 指令處理邏輯
