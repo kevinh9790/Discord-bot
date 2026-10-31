@@ -8,6 +8,10 @@ jest.mock('../../config/config.js', () => ({
         {
             targetId: 'forum-1',
             sourceIds: ['source-1']
+        },
+        {
+            targetId: '1230535700525486110',
+            sourceIds: ['1442811186528911512']
         }
     ]
 }));
@@ -49,8 +53,9 @@ describe('Dev Log Handler', () => {
             author: { id: 'user-1', username: 'DevUser' },
             guild: {
                 channels: {
+                    fetch: jest.fn().mockResolvedValue(mockForumChannel),
                     cache: {
-                        get: jest.fn(id => id === 'forum-1' ? mockForumChannel : undefined)
+                        get: jest.fn(id => ['forum-1', '1230535700525486110'].includes(id) ? mockForumChannel : undefined)
                     }
                 }
             },
@@ -58,6 +63,61 @@ describe('Dev Log Handler', () => {
             react: jest.fn(),
             reply: jest.fn()
         };
+    });
+
+    test.each(['source-1', '1442811186528911512'])('should report format errors in %s even without a cached forum', async channelId => {
+        mockMessage.channel.id = channelId;
+        mockMessage.content = 'DevLog';
+        mockMessage.guild.channels.cache.get.mockReturnValue(undefined);
+
+        expect(await devLogHandler.handleDevLog(mockMessage)).toBe(true);
+        expect(mockMessage.reply).toHaveBeenCalledWith(expect.objectContaining({
+            content: expect.stringContaining('格式錯誤')
+        }));
+        expect(mockMessage.guild.channels.fetch).not.toHaveBeenCalled();
+    });
+
+    test('should fetch an uncached forum and forward to the group B target', async () => {
+        mockMessage.channel.id = '1442811186528911512';
+        mockMessage.guild.channels.cache.get.mockReturnValue(undefined);
+
+        await devLogHandler.handleDevLog(mockMessage);
+
+        expect(mockMessage.guild.channels.fetch).toHaveBeenCalledWith('1230535700525486110');
+        expect(mockThread.send).toHaveBeenCalledWith(expect.objectContaining({ content: 'Update content' }));
+        expect(mockMessage.react).toHaveBeenCalledWith('✅');
+    });
+
+    test.each([null, { type: ChannelType.GuildText }])('should reply when the target is missing or is not a forum：%j', async target => {
+        mockMessage.guild.channels.cache.get.mockReturnValue(undefined);
+        mockMessage.guild.channels.fetch.mockResolvedValue(target);
+        const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            expect(await devLogHandler.handleDevLog(mockMessage)).toBe(true);
+            expect(mockMessage.reply).toHaveBeenCalledWith(expect.stringContaining('不存在或不是論壇頻道'));
+            expect(mockThread.send).not.toHaveBeenCalled();
+        } finally {
+            errorLog.mockRestore();
+        }
+    });
+
+    test('should report a forum access failure and log a failed error reply', async () => {
+        mockMessage.guild.channels.cache.get.mockReturnValue(undefined);
+        mockMessage.guild.channels.fetch.mockRejectedValue(new Error('Missing Access'));
+        const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await devLogHandler.handleDevLog(mockMessage);
+            expect(mockMessage.reply).toHaveBeenCalledWith(expect.stringContaining('Missing Access'));
+            expect(mockThread.send).not.toHaveBeenCalled();
+
+            mockMessage.reply.mockRejectedValue(new Error('Missing Permissions'));
+            expect(await devLogHandler.handleDevLog(mockMessage)).toBe(true);
+            expect(errorLog).toHaveBeenCalledWith(
+                expect.stringContaining('無法回覆來源頻道'), expect.any(Error)
+            );
+        } finally {
+            errorLog.mockRestore();
+        }
     });
 
     test('should ignore messages without prefix', async () => {

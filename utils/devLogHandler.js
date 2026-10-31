@@ -65,12 +65,6 @@ module.exports = {
         }
 
         const targetForumId = currentGroup.targetId;
-        const forumChannel = message.guild.channels.cache.get(targetForumId);
-
-        if (!forumChannel || forumChannel.type !== ChannelType.GuildForum) {
-            console.error(`❌ [DevLog] 找不到目標論壇 (${targetForumId})`);
-            return true; // Handled (with error)
-        }
 
         try {
             // 1. 解析內容：分離 [遊戲名稱] 與 [進度內容]
@@ -105,6 +99,16 @@ module.exports = {
             // 檢查有沒有實質內容（至少要有文字或圖片）
             if (!logContent && attachmentFiles.length === 0) {
                 await message.reply("⚠️ 請輸入進度內容或上傳圖片喔！");
+                return true;
+            }
+
+            // 格式正確後才查找論壇；快取未命中時向 Discord 查詢。
+            const forumChannel = message.guild.channels.cache.get(targetForumId)
+                || await message.guild.channels.fetch(targetForumId);
+
+            if (!forumChannel || forumChannel.type !== ChannelType.GuildForum) {
+                console.error(`❌ [DevLog] 目標論壇不存在或類型不符：${targetForumId}`);
+                await message.reply(`❌ 無法轉發：目標 <#${targetForumId}> 不存在或不是論壇頻道，請聯絡管理員確認設定。`);
                 return true;
             }
 
@@ -188,7 +192,12 @@ module.exports = {
             await message.react("✅");
 
         } catch (err) {
-            await message.reply(`❌ 轉發失敗: ${err.message}`);
+            console.error(`❌ [DevLog] 轉發失敗：來源 ${message.channel.id}，目標 ${targetForumId}`, err);
+            try {
+                await message.reply(`❌ 轉發失敗：${err.message}。請聯絡管理員確認 Bot 的頻道存取與發送權限。`);
+            } catch (replyError) {
+                console.error(`❌ [DevLog] 無法回覆來源頻道：${message.channel.id}`, replyError);
+            }
         }
 
         return true; // Handled
