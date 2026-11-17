@@ -1,6 +1,7 @@
 ﻿const {
     Events,
     ChannelType,
+    OverwriteType,
     PermissionFlagsBits,
     ActionRowBuilder,
     ButtonBuilder,
@@ -15,6 +16,7 @@ const config = require('../config/config.js');
 
 const SUGGESTION_CHANNEL_ID = config.CHANNELS.SUGGESTION;
 const TICKET_LOG_CHANNEL_ID = config.CHANNELS.TICKET_LOG;
+const TICKET_VIEWER_ROLE_ID = '1461551622135218208';
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -98,6 +100,7 @@ module.exports = {
                         parent: category ? category.id : null,
                         permissionOverwrites: [
                             { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                            { id: TICKET_VIEWER_ROLE_ID, type: OverwriteType.Role, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory] },
                             { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
                             { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
                         ],
